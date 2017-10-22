@@ -9,9 +9,11 @@ type Message2 =
 
 [<EntryPoint>]
 let main argv =
-    let handleMessage msg = 
+    let handleMessage (msg: obj) = 
         match msg with
-        | Text t -> printfn "This could work: %s" t
+        | :? Message2 as m ->
+            match m with
+            | Text t -> printfn "This could work: %s" t
 
     let pid = 
         simpleProducer handleMessage

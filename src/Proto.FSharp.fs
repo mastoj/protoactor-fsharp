@@ -57,26 +57,28 @@ module Actor =
 
     let spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
 
-    let simpleProducer<'T> f =
+    let simpleProducer (f: obj -> unit) =
         fun () ->
             { new IActor with 
                 member this.ReceiveAsync(context: IContext) = 
                     let msg = context.Message
                     match msg with
-                    | :? 'T as x -> f x
                     | :? Proto.Started
                     | :? Proto.Restarting 
                     | :? Proto.Stopping -> 
                         printfn "Internal message: %A" msg
-                    | _ -> 
-                        raise (exn (sprintf "Invalid message: %A" msg)) 
+                    | x -> f x
                     Actor.Done }
 
     let fromProducer producer = Actor.FromProducer(toFunc(producer))
 
-    let fromFunc receive = Actor.FromFunc(receive)
+    let fromFunc receive =
+        Receive(receive)
+        |> Actor.FromFunc
 
 [<AutoOpen>]
 module Pid = 
     let tell (pid: PID) msg = 
-        pid.Tell(msg) 
+        pid.Tell(msg)
+    
+    let (<!) (pid: PID) msg = tell pid msg

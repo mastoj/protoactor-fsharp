@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Messages/Messages.csproj">
+      <Name>Messages.csproj</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../../src/Proto.Actor.FSharp.fsproj">
+      <Name>Proto.Actor.FSharp.fsproj</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Proto.Actor" Version="0.1.13" />
+    <PackageReference Include="Proto.Mailbox" Version="0.1.13" />
+    <PackageReference Include="Proto.Remote" Version="0.1.13" />
+  </ItemGroup>
+</Project>
