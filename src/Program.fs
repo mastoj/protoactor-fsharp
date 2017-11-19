@@ -131,6 +131,8 @@ module ProtoFSharp =
     let proto = ProtoBuilder()
 
 open ProtoFSharp
+open System.Security.Cryptography
+open System.Runtime.Serialization
 
 module Spawn =
     open Proto
@@ -160,6 +162,21 @@ module Spawn =
         let props = Actor.FromProducer(producerFunc)
         Actor.spawn props
 
+type Messages = 
+    | Hello
+    | World of string
+
+type Msg1 = { Name : string }
+type Msg2 = { Age : int }
+
+let (|Msg1|_|) (msg: obj) =
+    match msg with
+    | :? Msg1 as m -> Some(m)
+    | _ -> None
+let (|Msg2|_|) (msg: obj) =
+    match msg with
+    | :? Msg2 as m -> Some(m)
+    | _ -> None
 
 let test2() =
     let proton = (fun (mailbox: Actor<string>) ->
@@ -177,6 +194,44 @@ let test2() =
     let pid = Spawn.spawn proton // spawn system "my-actor" proton
     pid <! "proto"
     pid <! "actor"
+
+    let proton2 (mailbox:Actor<Messages>) =
+        let rec loop state = proto {
+            let! message = mailbox.Receive()
+            printfn "Received: %A" message
+            let state' = message :: state
+            printfn "State: %A" state'
+            return! loop state'
+        }
+        loop []
+
+    let pid2 = Spawn.spawn proton2
+    pid2 <! Hello
+    pid2 <! World "Tellus"
+
+
+    let pid3 = Spawn.spawn 
+                (fun (mailbox: Actor<obj>) -> 
+                    let rec loop() = proto { 
+                        let! message = mailbox.Receive()
+                        printfn "%A" message
+                        return! loop() } 
+                    in loop())
+    [ 1 .. 100 ] |> List.iter (fun i -> pid3 <! i)
+
+    let pid4 = Spawn.spawn 
+                (fun (mailbox: Actor<obj>) -> 
+                    let rec loop() = proto { 
+                        let! message = mailbox.Receive()
+                        match message with
+                        | Msg1 m -> printfn "Message1: %A" m
+                        | Msg2 m -> printfn "Message2: %A" m
+                        | _ -> printfn "Unknown message: %A" message
+                        return! loop() } 
+                    in loop())
+    pid4 <! { Name = "tomas" }
+    pid4 <! { Age = 35 }
+    pid4 <! "this isn't handled"
     ()
 
 
