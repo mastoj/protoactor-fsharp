@@ -43,29 +43,33 @@ let test2() =
         | IsMessage m -> m
         | _ -> Unknown
 
-    let handler4 (msg: Messages) state = 
+    let handler4 mapper (mailbox: Actor.Actor<obj>) (msg: obj) state = 
         let state' : Person = 
-            match msg with
+            match msg |> mapper with
             | SetName m -> 
                 printfn "SetName: %A" m
                 { state with Name = m.Name }
             | SetAge m -> 
                 printfn "SetAge: %A" m
+                mailbox.CurrentContext().Respond("You go girl")
                 { state with Age = m.Age }
             | Unknown -> 
                 printfn "unknown %A" msg
+//                mailbox.CurrentContext().Respond("You go girl")
                 state
         printfn "Current state: %A" state'
         state'
 
     let pid4 =
-        Actor.withState (mapMsg >> handler4) { Name = "John"; Age = 0}
+        Actor.withState2 (handler4 mapMsg) { Name = "John"; Age = 0}
         |> Actor.initProps 
         |> Actor.spawn
 
     pid4 <! { Name = "tomas" }
-    pid4 <! { Age = 35 }
-    pid4 <! "this isn't handled"
+    async {
+        return! pid4 <? { Age = 35 }
+//        return! pid4 <? "this isn't handled"
+    } |> Async.RunSynchronously |> (printfn "Reponse %A")
     ()
 
 [<EntryPoint>]
