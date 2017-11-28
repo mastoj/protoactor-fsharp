@@ -1,16 +1,48 @@
-module Proto.FSharp
+namespace Proto.FSharp
 
 open Proto
 open System.Threading.Tasks
 open System
+open System.IO
 
-let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
+module Async = 
+    let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
 
 module System = 
     let toFunc<'a> f = Func<'a>(f)
     let toFunc2<'a, 'b> f = Func<'a, 'b>(f)
 
 module Actor =
+
+    type SystemMessage =
+        | AutoReceiveMessage of AutoReceiveMessage
+        | Terminated of Terminated
+        | Restarting of Restarting
+        | Failure of Failure
+        | Watch of Watch
+        | Unwatch of Unwatch
+        | Restart of Restart
+        | Stop of Stop
+        | Started of Started
+        | ReceiveTimeout of ReceiveTimeout
+        | Continuation of Continuation
+
+    let (|IsSystemMessage|_|) (msg:obj) = 
+        match msg with
+        | :? AutoReceiveMessage as m -> Some(AutoReceiveMessage m)
+        | :? Terminated as m -> Some(Terminated m)
+        | :? Restarting as m -> Some(Restarting m)
+        | :? Failure as m -> Some(Failure m)
+        | :? Watch as m -> Some(Watch m)
+        | :? Unwatch as m -> Some(Unwatch m)
+        | :? Restart as m -> Some(Restart m)
+        | :? Stop as m -> Some(Stop m)
+        | :? Started as m -> Some(Started m)
+        | :? ReceiveTimeout as m -> Some(ReceiveTimeout m)
+        | :? Continuation as m -> Some(Continuation m)
+        | _ -> None
+        
+
     let spawn (props: Props) = Actor.Spawn(props)
 
     let spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
@@ -140,7 +172,7 @@ module Actor =
                             state <- f msg
                         | _ -> ()
                     | Return x -> x
-                } |> startAsPlainTask
+                } |> Async.startAsPlainTask
 
     let initProps (createActor: Actor<'Message> -> Cont<'Message, 'Returned>) =
         let producer () = new FSharpActor<'Message, 'Returned>(createActor) :> IActor

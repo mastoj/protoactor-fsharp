@@ -1,5 +1,6 @@
 ﻿open System
 open Proto.FSharp
+open Proto.FSharp.Actor
 
 type Person = 
     {
@@ -13,7 +14,8 @@ type SetAge = { Age : int }
 type Messages =
     | SetName of SetName
     | SetAge of SetAge
-    | Unknown
+    | SystemMessage of SystemMessage
+    | Unknown of obj
 
 let (|IsMessage|_|) (msg: obj) =
     match msg with
@@ -41,7 +43,8 @@ let test2() =
     let mapMsg (msg: obj) =
         match msg with
         | IsMessage m -> m
-        | _ -> Unknown
+        | IsSystemMessage m -> SystemMessage m
+        | _ -> Unknown msg
 
     let handler4 mapper (mailbox: Actor.Actor<obj>) (msg: obj) state = 
         let state' : Person = 
@@ -53,9 +56,12 @@ let test2() =
                 printfn "SetAge: %A" m
                 mailbox.CurrentContext().Respond("You go girl")
                 { state with Age = m.Age }
-            | Unknown -> 
-                printfn "unknown %A" msg
-//                mailbox.CurrentContext().Respond("You go girl")
+            | SystemMessage m ->
+                printfn "System message: %A" m
+                state
+            | Unknown m -> 
+                printfn "unknown %A" m
+                mailbox.CurrentContext().Respond(sprintf "You go girl: %A" m)
                 state
         printfn "Current state: %A" state'
         state'
@@ -67,8 +73,9 @@ let test2() =
 
     pid4 <! { Name = "tomas" }
     async {
-        return! pid4 <? { Age = 35 }
-//        return! pid4 <? "this isn't handled"
+        let! x = { Age = 35 } >? pid4
+        let! y = "this isn't handled" >? pid4
+        return (x,y)
     } |> Async.RunSynchronously |> (printfn "Reponse %A")
     ()
 
