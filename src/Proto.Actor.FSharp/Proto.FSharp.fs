@@ -5,6 +5,13 @@ open System.Threading.Tasks
 open System
 open System.IO
 
+module Async = 
+    let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
+
+module System = 
+    let toFunc<'a> f = Func<'a>(f)
+    let toFunc2<'a, 'b> f = Func<'a, 'b>(f)
+
 [<AutoOpen>]
 module Core =
     type SystemMessage =
@@ -35,27 +42,13 @@ module Core =
         | :? Continuation as m -> Some(Continuation m)
         | _ -> None
 
-module Async = 
-    let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
-
-module System = 
-    let toFunc<'a> f = Func<'a>(f)
-    let toFunc2<'a, 'b> f = Func<'a, 'b>(f)
-
-module Actor =
-    let spawn (props: Props) = Actor.Spawn(props)
-
-    let spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
-
-    let spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
-
     type IO<'T> =
         | Input
 
     type Actor<'Message> = 
         abstract Receive : unit -> IO<'Message>
         abstract CurrentContext: unit -> IContext
-
+        abstract Sender: unit -> PID
 
     type Cont<'In, 'Out> = 
         | Func of ('In -> Cont<'In, 'Out>)
@@ -155,7 +148,8 @@ module Actor =
                 new Actor<'T1> 
                     with 
                         member __.Receive() = Input
-                        member __.CurrentContext() = this.CurrentContext()}
+                        member __.CurrentContext() = this.CurrentContext()
+                        member __.Sender() = this.CurrentContext().Sender }
         let mutable state = createActor actor
         let mutable ctx: IContext = null
         member __.CurrentContext() = 
@@ -176,13 +170,20 @@ module Actor =
                         | _ -> ()
                     | Return x -> x
                 } |> Async.startAsPlainTask
+    let proto = ProtoBuilder()
+
+[<RequireQualifiedAccess>]
+module Actor =
+    let spawn (props: Props) = Actor.Spawn(props)
+
+    let spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
+
+    let spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
 
     let initProps (createActor: Actor<'Message> -> Cont<'Message, 'Returned>) =
         let producer () = new FSharpActor<'Message, 'Returned>(createActor) :> IActor
         let producerFunc = System.Func<_>(producer)
         Actor.FromProducer(producerFunc)
-
-    let proto = ProtoBuilder()
 
     let withState2 (handler: Actor<'Message> -> 'Message -> 'State -> 'State) (initialState: 'State) (mailbox : Actor<'Message>) =
         let rec loop state = 
@@ -202,8 +203,7 @@ module Actor =
     let create2 (handler: Actor<'Message> -> 'Message -> unit) =
         withState2 (fun mb m _ -> handler mb m) ()
 
-
-[<AutoOpen>]
+[<RequireQualifiedAccess>]
 module Props = 
     open System
 
