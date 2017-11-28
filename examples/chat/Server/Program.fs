@@ -5,50 +5,75 @@ open Proto
 open Proto.FSharp
 open chat.messages
 open Proto.Remote
+open Grpc.Core
+open Proto
+
+type Message =
+    | Connect of Connect
+    | SayRequest of SayRequest
+    | NickRequest of NickRequest
+    | SystemMessage of SystemMessage
+    | Unknown of obj
 
 [<EntryPoint>]
 let main argv =
     Serialization.RegisterFileDescriptor(ChatReflection.Descriptor)
     Remote.Start("127.0.0.1", 8000)
 
-    let mutable clients = []
+    let (|IsMessage|_|) (msg:obj) =
+        match msg with
+        | :? Connect as m -> Some(Connect m)
+        | :? SayRequest as m -> Some(SayRequest m)
+        | :? NickRequest as m -> Some(NickRequest m)
+        | _ -> None
 
-    // let toPid (pid: chat.messages. = 
+    let mapMsg (msg:obj) =
+        printfn "Am I here?"
+        match msg with
+        | IsMessage m -> 
+            printfn "IsMessage"
+            m
+        | IsSystemMessage m -> 
+            printfn "SystemMessage"
+            SystemMessage m
+        | _ -> 
+            printfn "Unknown"
+            Unknown msg
 
-    let sayTo (clients: chat.messages.PID list) msg =
-        clients
-        |> List.map (fun a -> Proto.PID(a.Address, a.Id))
-        |> List.iter (fun pid -> pid <! msg)
+    let handleMessage (msg: Message) (clients) =
+        printfn "Am I here to?"
+        let sayTo clients msg =
+            clients |> List.iter (fun c -> msg >! c)
 
-    let actor (ctx: Proto.IContext) = 
-        match ctx.Message with
-        | :? Connect as req ->
-            printfn "client %A connected" req.Sender
-            clients <- req.Sender :: clients
-            let msg = Connected()
-            msg.Message <- "Welcome!"
-            let pid = Proto.PID(req.Sender.Address, req.Sender.Id)
-            pid <! msg
-            //            msg |> tell req.Sender
-        | :? SayRequest as req ->
-            let msg = SayResponse()
-            msg.UserName <- req.UserName
-            msg.Message <- req.Message
-            msg |> sayTo clients
-        | :? NickRequest as req ->
-            let msg = NickResponse()
-            msg.OldUserName <- req.OldUserName
-            msg.NewUserName <- req.NewUserName
-            msg |> sayTo clients
-        | _ -> printfn "Uknown request: %A" ctx.Message
-        Actor.Done
+        let clients' =
+            match msg with
+            | Connect req ->
+                printfn "client %A connected" req.Sender
+                let msg = Connected()
+                msg.Message <- "Welcome!"
+                let pid = Proto.PID(req.Sender.Address, req.Sender.Id)
+                msg >! pid
+                let sender = Proto.PID(req.Sender.Address, req.Sender.Id)
+                sender :: clients
+            | SayRequest req ->
+                let msg = SayResponse()
+                msg.UserName <- req.UserName
+                msg.Message <- req.Message
+                msg |> sayTo clients
+                clients
+            | NickRequest req ->
+                let msg = NickResponse()
+                msg.OldUserName <- req.OldUserName
+                msg.NewUserName <- req.NewUserName
+                msg |> sayTo clients
+                clients
+            | x -> 
+                printfn "Uknown request: %A" x
+                clients
+        clients'
 
-    actor
-    |> fromFunc
-    |> spawnNamed "chatserver"
-    |> ignore
-
+    Actor.withState (mapMsg >> handleMessage) [] |> Actor.initProps |> Actor.spawnNamed "chatserver" |> ignore
+    printfn "Started"
     System.Console.ReadLine() |> ignore
-
 
     0 // return an integer exit code

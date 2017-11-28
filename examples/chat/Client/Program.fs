@@ -2,10 +2,18 @@
 
 open System
 open Proto
-open Proto.FSharp
 open chat.messages
 open Proto.Remote
+open Proto.Mailbox
+open Proto.FSharp
+open Proto.FSharp.Actor
 
+type Message =
+    | Connected of Connected
+    | SayResponse of SayResponse
+    | NickResponse of NickResponse
+    | SystemMessage of SystemMessage
+    | Unknown of obj
 
 [<EntryPoint>]
 let main argv =
@@ -13,27 +21,37 @@ let main argv =
     Remote.Start("127.0.0.1", 0);
     let server = Proto.PID("127.0.0.1:8000", "chatserver")
 
-    let handleMessage (ctx: IContext) = 
-        match ctx.Message with
-        | :? Connected as req -> 
-            printfn "%A" req.Message
-        | :? SayResponse as req ->
-            printfn "%s %s" req.UserName req.Message
-        | :? NickResponse as req ->
-            printfn "%s is now %s" req.OldUserName req.NewUserName
-        | _ -> printfn "Unknown message: %A" ctx.Message
-        Actor.Done
+    let (|IsMessage|_|) (msg:obj) =
+        match msg with
+        | :? Connected as m -> Some(Connected m)
+        | :? SayResponse as m -> Some(SayResponse m)
+        | :? NickResponse as m -> Some(NickResponse m)
+        | _ -> None
 
-    handleMessage
-    |> fromFunc
-    |> spawn
-    |> (fun pid -> 
-            let msg = Connect()
-            msg.Sender <- chat.messages.PID()
-            msg.Sender.Address <- pid.Address
-            msg.Sender.Id <- pid.Id
-            msg)
-    |> tell server
+    let mapMsg (msg:obj) =
+        match msg with
+        | IsMessage m -> m
+        | IsSystemMessage m -> SystemMessage m
+        | _ -> Unknown msg
+
+    let handleMessage (msg: Message) =
+        match msg with
+        | Connected req -> printfn "%A" req.Message
+        | SayResponse req ->
+            printfn "%s %s" req.UserName req.Message
+        | NickResponse req ->
+            printfn "%s is now %s" req.OldUserName req.NewUserName
+        | SystemMessage _ -> ()
+        | Unknown _ -> ()
+
+    let pid = Actor.create (mapMsg >> handleMessage) |> Actor.initProps |> Actor.spawn
+    let tellServer (pid: Proto.PID) (server:Proto.PID) =
+        let msg = Connect()
+        msg.Sender <- chat.messages.PID()
+        msg.Sender.Address <- pid.Address
+        msg.Sender.Id <- pid.Id
+        msg >! server
+    tellServer pid server
 
     let mutable nick = "Alex"
 
@@ -46,14 +64,14 @@ let main argv =
             let msg = NickRequest()
             msg.OldUserName <- nick
             msg.NewUserName <- arr.[1]
-            server <! msg
+            msg >! server
             nick <- msg.NewUserName
             readLine()
         else
             let msg = SayRequest()
             msg.UserName <- nick
             msg.Message <- line
-            server <! msg
+            msg >! server
             readLine()
 
     readLine()

@@ -5,15 +5,8 @@ open System.Threading.Tasks
 open System
 open System.IO
 
-module Async = 
-    let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
-
-module System = 
-    let toFunc<'a> f = Func<'a>(f)
-    let toFunc2<'a, 'b> f = Func<'a, 'b>(f)
-
-module Actor =
-
+[<AutoOpen>]
+module Core =
     type SystemMessage =
         | AutoReceiveMessage of AutoReceiveMessage
         | Terminated of Terminated
@@ -41,8 +34,15 @@ module Actor =
         | :? ReceiveTimeout as m -> Some(ReceiveTimeout m)
         | :? Continuation as m -> Some(Continuation m)
         | _ -> None
-        
 
+module Async = 
+    let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
+
+module System = 
+    let toFunc<'a> f = Func<'a>(f)
+    let toFunc2<'a, 'b> f = Func<'a, 'b>(f)
+
+module Actor =
     let spawn (props: Props) = Actor.Spawn(props)
 
     let spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
@@ -168,8 +168,11 @@ module Actor =
                     | Func f ->
                         ctx <- context
                         match context.Message with
-                        | :? 'T1 as msg -> 
-                            state <- f msg
+                        | :? 'T1 as msg ->
+                            try
+                                state <- f msg
+                            with
+                            | x -> printfn "Failed to execute actor: %A" x
                         | _ -> ()
                     | Return x -> x
                 } |> Async.startAsPlainTask
