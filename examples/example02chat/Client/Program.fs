@@ -6,7 +6,6 @@ open chat.messages
 open Proto.Remote
 open Proto.Mailbox
 open Proto.FSharp
-open Proto.FSharp.Actor
 
 type Message =
     | Connected of Connected

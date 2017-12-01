@@ -1,0 +1,9 @@
+framework: auto-detect
+
+source https://www.nuget.org/api/v2
+
+nuget FAKE
+nuget Proto.Actor
+nuget Microsoft.Extensions.Logging.Abstractions ~> 1.1
+
+github fsharp/FAKE modules/Octokit/Octokit.fsx
