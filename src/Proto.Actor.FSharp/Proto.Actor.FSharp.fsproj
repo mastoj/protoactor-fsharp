@@ -3,6 +3,7 @@
   <PropertyGroup>
     <!-- <OutputType>Exe</OutputType> -->
     <TargetFramework>netstandard1.5</TargetFramework>
+    <AssemblyName>Proto.FSharp</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Proto.FSharp.fs" />
