@@ -15,7 +15,8 @@ open System
 // --------------------------------------------------------------------------------------
 
 let buildDir  = "./build/"
-let appReferences = !! "/**/*.??proj"
+let appReferences = !! "src/**/*.??proj"
+let examplesReferences = !! "examples/**/*.??proj"
 let dotnetcliVersion = "2.0.2"
 let mutable dotnetExePath = "dotnet"
 let project = "protoactor-fsharp"
@@ -98,14 +99,17 @@ Target "Restore" (fun _ ->
     )
 )
 
-Target "Build" (fun _ ->
-    appReferences
+let build fileIncludes _ =
+    fileIncludes
     |> Seq.iter (fun p ->
         let dir = System.IO.Path.GetDirectoryName p
         let target = sprintf "build -c %s" configuration
         runDotnet dir target
     )
-)
+
+Target "Build" (build appReferences)
+
+Target "BuildExamples" (build examplesReferences)
 
 Target "NuGet" (fun _ ->
     Paket.Pack(fun p ->
@@ -172,7 +176,10 @@ Target "BuildPackage" DoNothing
     ==> "All"
 
 "BuildPackage"
-  ==> "PublishNuget"
-  ==> "Release"
+    ==> "PublishNuget"
+    ==> "Release"
+
+"Build"
+    ==> "BuildExamples"
 
 RunTargetOrDefault "All"
