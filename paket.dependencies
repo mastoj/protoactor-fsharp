@@ -3,7 +3,11 @@ framework: auto-detect
 source https://www.nuget.org/api/v2
 
 nuget FAKE
-nuget Proto.Actor
+nuget FSharp.Core
 nuget Microsoft.Extensions.Logging.Abstractions ~> 1.1
+
+source https://www.myget.org/F/protoactor/api/v3/index.json
+nuget Proto.Actor 0.1.15-build00650-dev
+nuget Proto.Cluster.Consul 0.1.15-build00650-dev
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx
