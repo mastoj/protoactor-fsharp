@@ -30,10 +30,27 @@ let doStuff() =
     let res = HelloRequest() >? pid |> Async.RunSynchronously
     printfn "==> Result: %A" res
 
+let registerHandler() =
+    Serialization.RegisterFileDescriptor(ProtosReflection.Descriptor)
+    let handler (mailbox:Actor<obj>) (msg:obj) =
+        printfn "Some one called: %A" (msg.GetType())
+        match msg with
+        | :? HelloRequest ->
+            printfn "Someone is saying hello %A" (mailbox.Sender())
+            let response = HelloResponse()
+            response.Message <- "Hello from node2"
+            mailbox.CurrentContext().Respond(response)
+            printfn "Did we send response?"
+        | _ -> ()
+    
+    let props = Actor.create2 handler |> Actor.initProps
+    Remote.RegisterKnownKind("HelloKind", props)
+
 [<EntryPoint>]
 let main argv =
     let p = startConsul()
     try
+        registerHandler()
         startCluster()
         doStuff()
         Console.ReadLine() |> ignore
