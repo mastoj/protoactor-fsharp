@@ -46,9 +46,7 @@ module Core =
         | Input
 
     type Actor<'Message> = 
-        abstract Receive : unit -> IO<'Message>
-        abstract CurrentContext: unit -> IContext
-        abstract Sender: unit -> PID
+        abstract Receive : unit -> IO<IContext*'Message>
 
     type Cont<'In, 'Out> = 
         | Func of ('In -> Cont<'In, 'Out>)
@@ -142,29 +140,23 @@ module Core =
             | Func fx -> Func(fun m -> this.Combine(fx m, g))
             | Return _ -> g
 
-    type FSharpActor<'Message, 'ReturnType>(createActor: Actor<'Message> -> Cont<'Message, 'Returned>) as this = 
+    type FSharpActor<'Message, 'ReturnType>(createActor: Actor<'Message> -> Cont<IContext*'Message, 'Returned>) as this = 
         let actor = 
             { 
                 new Actor<'T1> 
                     with 
-                        member __.Receive() = Input
-                        member __.CurrentContext() = this.CurrentContext()
-                        member __.Sender() = this.CurrentContext().Sender }
+                        member __.Receive() = Input }
         let mutable state = createActor actor
-        let mutable ctx: IContext = null
-        member __.CurrentContext() = 
-            ctx
 
         interface IActor with
             member this.ReceiveAsync(context: IContext) =
                 async {
                     match state with
                     | Func f ->
-                        ctx <- context
                         match context.Message with
                         | :? 'T1 as msg ->
                             try
-                                state <- f msg
+                                state <- f (context, msg)
                             with
                             | x -> printfn "Failed to execute actor: %A" x
                         | _ -> ()
@@ -180,16 +172,16 @@ module Actor =
 
     let spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
 
-    let initProps (createActor: Actor<'Message> -> Cont<'Message, 'Returned>) =
+    let initProps (createActor: Actor<'Message> -> Cont<IContext*'Message, 'Returned>) =
         let producer () = new FSharpActor<'Message, 'Returned>(createActor) :> IActor
         let producerFunc = System.Func<_>(producer)
         Actor.FromProducer(producerFunc)
 
-    let withState2 (handler: Actor<'Message> -> 'Message -> 'State -> 'State) (initialState: 'State) (mailbox : Actor<'Message>) =
+    let withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) (mailbox : Actor<'Message>) =
         let rec loop state = 
             proto {
-                let! msg = mailbox.Receive()
-                let state' = state |> handler mailbox msg
+                let! (ctx, msg) = mailbox.Receive()
+                let state' = state |> handler ctx msg
                 return! loop state'
             }
         loop initialState
@@ -200,8 +192,8 @@ module Actor =
     let create (handler: 'Message -> unit) =
         withState2 (fun _ m _ -> handler m) ()
 
-    let create2 (handler: Actor<'Message> -> 'Message -> unit) =
-        withState2 (fun mb m _ -> handler mb m) ()
+    let create2 (handler: IContext -> 'Message -> unit) =
+        withState2 (fun context message _ -> handler context message) ()
 
 [<RequireQualifiedAccess>]
 module Props = 
