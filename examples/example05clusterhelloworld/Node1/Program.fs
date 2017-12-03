@@ -17,6 +17,7 @@ let startConsul() =
     p
 
 let startCluster() =
+    Serialization.RegisterFileDescriptor(ProtosReflection.Descriptor)
     Cluster.Start("MyCluster", "127.0.0.1", 12000, ConsulProvider(ConsulProviderOptions()))
 
 let doStuff() = 
