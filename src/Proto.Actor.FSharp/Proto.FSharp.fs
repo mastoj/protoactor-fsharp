@@ -4,6 +4,7 @@ open Proto
 open System.Threading.Tasks
 open System
 open System.IO
+open Proto
 
 module Async = 
     let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
@@ -41,6 +42,14 @@ module Core =
         | :? ReceiveTimeout as m -> Some(ReceiveTimeout m)
         | :? Continuation as m -> Some(Continuation m)
         | _ -> None
+
+    type Decider = PID -> Exception -> SupervisorDirective
+
+    type SupervisionStrategy =
+        | DefaultStrategy
+        | AllForOneStrategy of decider:Decider * maxNrOfRetries:int * withinTimeSpan:TimeSpan option
+        | OneForOneStrategy of decider:Decider * maxNrOfRetries:int * withinTimeSpan:TimeSpan option
+        | ExponentialBackoffStrategy of backoffWindow:TimeSpan * initialBackoff:TimeSpan
 
     type IO<'T> =
         | Input
@@ -158,7 +167,9 @@ module Core =
                             try
                                 state <- f (context, msg)
                             with
-                            | x -> printfn "Failed to execute actor: %A" x
+                            | x -> 
+                                printfn "Failed to execute actor: %A" x
+                                raise x
                         | _ -> ()
                     | Return x -> x
                 } |> Async.startAsPlainTask
@@ -211,7 +222,24 @@ module Props =
         props.WithMailbox(mailbox)
 
     let withChildSupervisorStrategy supervisorStrategy (props: Props) =
-        props.WithChildSupervisorStrategy(supervisorStrategy)
+        let strategy =
+            match supervisorStrategy with
+            | DefaultStrategy -> Supervision.DefaultStrategy
+            | OneForOneStrategy (decider, maxRetries, withinTimeSpan) ->
+                let withinTimeSpanNullable =
+                    match withinTimeSpan with
+                    | None -> Nullable<TimeSpan>()
+                    | Some timeSpan -> Nullable<TimeSpan>(timeSpan)
+                Proto.OneForOneStrategy(Proto.Decider(decider), maxRetries, withinTimeSpanNullable) :> ISupervisorStrategy
+            | AllForOneStrategy (decider, maxRetries, withinTimeSpan) -> 
+                let withinTimeSpanNullable =
+                    match withinTimeSpan with
+                    | None -> Nullable<TimeSpan>()
+                    | Some timeSpan -> Nullable<TimeSpan>(timeSpan)
+                Proto.AllForOneStrategy(Proto.Decider(decider), maxRetries, withinTimeSpanNullable) :> ISupervisorStrategy
+            | ExponentialBackoffStrategy (backoffWindow, initialBackoff) ->
+                Proto.ExponentialBackoffStrategy(backoffWindow, initialBackoff) :> ISupervisorStrategy
+        props.WithChildSupervisorStrategy(strategy)
 
     let withReceiveMiddleware (middleware: Receive -> Receive) (props: Props) =
         props.WithReceiveMiddleware([|toFunc2(middleware)|])
