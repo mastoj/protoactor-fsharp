@@ -10,16 +10,16 @@ let testSupervision strategy =
     let spawnChild (context: Proto.IContext) id =
         let childName = sprintf "child %i %s" id (System.Guid.NewGuid().ToString())
 
-        let handler (msg:obj) =
+        let handler (ctx:IContext) (msg:obj) =
+            printfn "Child actor pid: %A" ctx.Self
             match msg with
             | :? string -> raise (exn("I'm dying: " + childName))
             | _ -> printfn "(%s) Hello from child: %A" childName msg
 
-        let props = Actor.create handler |> Actor.initProps
+        let props = Actor.create2 handler |> Actor.initProps
         context.SpawnNamed(props, childName)
         printfn "Spawned child: %s" childName
 
-    let childProps = Actor.create
     let parentHandler (actor: Actor<obj>) =
         let rec loop() =
             proto {
