@@ -10,7 +10,7 @@ open Messages
 open System
 
 let startCluster() =
-    let consulConfigure = Action<Consul.ConsulClientConfiguration>(fun c -> c.Address <- Uri("http://consul:8500"))
+    let consulConfigure = Action<Consul.ConsulClientConfiguration>(fun c -> c.Address <- Uri("http://consul:8500/"))
     printfn "Connecting to cluster"
     Cluster.Start("MyCluster", "node1", 12001, ConsulProvider(ConsulProviderOptions(), consulConfigure))
     printfn "Connected to cluster"
@@ -19,7 +19,7 @@ let doStuff() =
     let rec getPid() = 
         printfn "==> Getting PID"
         let (pid, sc) = Cluster.GetAsync("MyCluster", "HelloKind").Result.ToTuple()
-        if sc <> ResponseStatusCode.OK then getPid()
+        if sc <> ResponseStatusCode.OK then System.Threading.Thread.Sleep(4000); getPid()
         else pid
     let pid = getPid()
     printfn "==> Getting data: %A" pid
@@ -47,7 +47,7 @@ let main argv =
     let start() =
         startCluster()
         doStuff()
-        Console.ReadLine() |> ignore
+        System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite)
     retry start 3 3
     // with
     // | x -> printfn "Something went wrong: %A" x
