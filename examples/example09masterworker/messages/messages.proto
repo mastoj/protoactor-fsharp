@@ -1,0 +1,25 @@
+syntax = "proto3";
+package messages;
+
+option csharp_namespace = "ProtoActorDemo.Messages";
+
+message PID {
+    string Address = 1;
+    string Id = 2;
+}
+
+message RequestWork {
+    PID pid = 1;
+}
+
+message SubmitWorkRequest {
+    PID pid = 1;
+    string correlation_id = 2;
+    int32 data = 3;
+}
+
+message FinishedWorkResponse {
+    PID pid = 1;
+    string correlation_id = 2;
+    int32 result = 3;
+}
