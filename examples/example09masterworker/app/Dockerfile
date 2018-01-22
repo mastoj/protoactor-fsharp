@@ -2,5 +2,6 @@ FROM gcr.io/google-appengine/aspnetcore:2.0
 ADD ./bin/Release/netcoreapp2.0/publish/ /app
 
 WORKDIR /app
-
-ENTRYPOINT [ "dotnet", "Node1.dll" ]
+EXPOSE 12000
+ENTRYPOINT [ "dotnet", "app.dll" ]
+#CMD [ "dotnet", "app.dll", "m", "100" ]

@@ -24,19 +24,19 @@ namespace ProtoActorDemo.Messages {
           string.Concat(
             "Cg5tZXNzYWdlcy5wcm90bxIIbWVzc2FnZXMiIgoDUElEEg8KB0FkZHJlc3MY",
             "ASABKAkSCgoCSWQYAiABKAkiKQoLUmVxdWVzdFdvcmsSGgoDcGlkGAEgASgL",
-            "Mg0ubWVzc2FnZXMuUElEIlUKEVN1Ym1pdFdvcmtSZXF1ZXN0EhoKA3BpZBgB",
-            "IAEoCzINLm1lc3NhZ2VzLlBJRBIWCg5jb3JyZWxhdGlvbl9pZBgCIAEoCRIM",
-            "CgRkYXRhGAMgASgFIloKFEZpbmlzaGVkV29ya1Jlc3BvbnNlEhoKA3BpZBgB",
-            "IAEoCzINLm1lc3NhZ2VzLlBJRBIWCg5jb3JyZWxhdGlvbl9pZBgCIAEoCRIO",
-            "CgZyZXN1bHQYAyABKAVCGqoCF1Byb3RvQWN0b3JEZW1vLk1lc3NhZ2VzYgZw",
-            "cm90bzM="));
+            "Mg0ubWVzc2FnZXMuUElEIjYKClN1Ym1pdFdvcmsSGgoDcGlkGAEgASgLMg0u",
+            "bWVzc2FnZXMuUElEEgwKBGRhdGEYAyABKAUiKgoZU3VibWl0RXhwZWN0ZWRS",
+            "ZXN1bHRDb3VudBINCgVjb3VudBgBIAEoBSIsCgxTdWJtaXRSZXN1bHQSDAoE",
+            "ZGF0YRgDIAEoBRIOCgZyZXN1bHQYBCABKAJCGqoCF1Byb3RvQWN0b3JEZW1v",
+            "Lk1lc3NhZ2VzYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.PID), global::ProtoActorDemo.Messages.PID.Parser, new[]{ "Address", "Id" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.RequestWork), global::ProtoActorDemo.Messages.RequestWork.Parser, new[]{ "Pid" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.SubmitWorkRequest), global::ProtoActorDemo.Messages.SubmitWorkRequest.Parser, new[]{ "Pid", "CorrelationId", "Data" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.FinishedWorkResponse), global::ProtoActorDemo.Messages.FinishedWorkResponse.Parser, new[]{ "Pid", "CorrelationId", "Result" }, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.SubmitWork), global::ProtoActorDemo.Messages.SubmitWork.Parser, new[]{ "Pid", "Data" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.SubmitExpectedResultCount), global::ProtoActorDemo.Messages.SubmitExpectedResultCount.Parser, new[]{ "Count" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::ProtoActorDemo.Messages.SubmitResult), global::ProtoActorDemo.Messages.SubmitResult.Parser, new[]{ "Data", "Result" }, null, null, null)
           }));
     }
     #endregion
@@ -311,10 +311,10 @@ namespace ProtoActorDemo.Messages {
 
   }
 
-  public sealed partial class SubmitWorkRequest : pb::IMessage<SubmitWorkRequest> {
-    private static readonly pb::MessageParser<SubmitWorkRequest> _parser = new pb::MessageParser<SubmitWorkRequest>(() => new SubmitWorkRequest());
+  public sealed partial class SubmitWork : pb::IMessage<SubmitWork> {
+    private static readonly pb::MessageParser<SubmitWork> _parser = new pb::MessageParser<SubmitWork>(() => new SubmitWork());
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static pb::MessageParser<SubmitWorkRequest> Parser { get { return _parser; } }
+    public static pb::MessageParser<SubmitWork> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
@@ -327,22 +327,21 @@ namespace ProtoActorDemo.Messages {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public SubmitWorkRequest() {
+    public SubmitWork() {
       OnConstruction();
     }
 
     partial void OnConstruction();
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public SubmitWorkRequest(SubmitWorkRequest other) : this() {
+    public SubmitWork(SubmitWork other) : this() {
       Pid = other.pid_ != null ? other.Pid.Clone() : null;
-      correlationId_ = other.correlationId_;
       data_ = other.data_;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public SubmitWorkRequest Clone() {
-      return new SubmitWorkRequest(this);
+    public SubmitWork Clone() {
+      return new SubmitWork(this);
     }
 
     /// <summary>Field number for the "pid" field.</summary>
@@ -353,17 +352,6 @@ namespace ProtoActorDemo.Messages {
       get { return pid_; }
       set {
         pid_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "correlation_id" field.</summary>
-    public const int CorrelationIdFieldNumber = 2;
-    private string correlationId_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public string CorrelationId {
-      get { return correlationId_; }
-      set {
-        correlationId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
@@ -380,11 +368,11 @@ namespace ProtoActorDemo.Messages {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
-      return Equals(other as SubmitWorkRequest);
+      return Equals(other as SubmitWork);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool Equals(SubmitWorkRequest other) {
+    public bool Equals(SubmitWork other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
@@ -392,7 +380,6 @@ namespace ProtoActorDemo.Messages {
         return true;
       }
       if (!object.Equals(Pid, other.Pid)) return false;
-      if (CorrelationId != other.CorrelationId) return false;
       if (Data != other.Data) return false;
       return true;
     }
@@ -401,7 +388,6 @@ namespace ProtoActorDemo.Messages {
     public override int GetHashCode() {
       int hash = 1;
       if (pid_ != null) hash ^= Pid.GetHashCode();
-      if (CorrelationId.Length != 0) hash ^= CorrelationId.GetHashCode();
       if (Data != 0) hash ^= Data.GetHashCode();
       return hash;
     }
@@ -417,10 +403,6 @@ namespace ProtoActorDemo.Messages {
         output.WriteRawTag(10);
         output.WriteMessage(Pid);
       }
-      if (CorrelationId.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(CorrelationId);
-      }
       if (Data != 0) {
         output.WriteRawTag(24);
         output.WriteInt32(Data);
@@ -433,9 +415,6 @@ namespace ProtoActorDemo.Messages {
       if (pid_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Pid);
       }
-      if (CorrelationId.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(CorrelationId);
-      }
       if (Data != 0) {
         size += 1 + pb::CodedOutputStream.ComputeInt32Size(Data);
       }
@@ -443,7 +422,7 @@ namespace ProtoActorDemo.Messages {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void MergeFrom(SubmitWorkRequest other) {
+    public void MergeFrom(SubmitWork other) {
       if (other == null) {
         return;
       }
@@ -452,9 +431,6 @@ namespace ProtoActorDemo.Messages {
           pid_ = new global::ProtoActorDemo.Messages.PID();
         }
         Pid.MergeFrom(other.Pid);
-      }
-      if (other.CorrelationId.Length != 0) {
-        CorrelationId = other.CorrelationId;
       }
       if (other.Data != 0) {
         Data = other.Data;
@@ -476,10 +452,6 @@ namespace ProtoActorDemo.Messages {
             input.ReadMessage(pid_);
             break;
           }
-          case 18: {
-            CorrelationId = input.ReadString();
-            break;
-          }
           case 24: {
             Data = input.ReadInt32();
             break;
@@ -490,10 +462,10 @@ namespace ProtoActorDemo.Messages {
 
   }
 
-  public sealed partial class FinishedWorkResponse : pb::IMessage<FinishedWorkResponse> {
-    private static readonly pb::MessageParser<FinishedWorkResponse> _parser = new pb::MessageParser<FinishedWorkResponse>(() => new FinishedWorkResponse());
+  public sealed partial class SubmitExpectedResultCount : pb::IMessage<SubmitExpectedResultCount> {
+    private static readonly pb::MessageParser<SubmitExpectedResultCount> _parser = new pb::MessageParser<SubmitExpectedResultCount>(() => new SubmitExpectedResultCount());
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public static pb::MessageParser<FinishedWorkResponse> Parser { get { return _parser; } }
+    public static pb::MessageParser<SubmitExpectedResultCount> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public static pbr::MessageDescriptor Descriptor {
@@ -506,82 +478,54 @@ namespace ProtoActorDemo.Messages {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public FinishedWorkResponse() {
+    public SubmitExpectedResultCount() {
       OnConstruction();
     }
 
     partial void OnConstruction();
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public FinishedWorkResponse(FinishedWorkResponse other) : this() {
-      Pid = other.pid_ != null ? other.Pid.Clone() : null;
-      correlationId_ = other.correlationId_;
-      result_ = other.result_;
+    public SubmitExpectedResultCount(SubmitExpectedResultCount other) : this() {
+      count_ = other.count_;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public FinishedWorkResponse Clone() {
-      return new FinishedWorkResponse(this);
+    public SubmitExpectedResultCount Clone() {
+      return new SubmitExpectedResultCount(this);
     }
 
-    /// <summary>Field number for the "pid" field.</summary>
-    public const int PidFieldNumber = 1;
-    private global::ProtoActorDemo.Messages.PID pid_;
+    /// <summary>Field number for the "count" field.</summary>
+    public const int CountFieldNumber = 1;
+    private int count_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public global::ProtoActorDemo.Messages.PID Pid {
-      get { return pid_; }
+    public int Count {
+      get { return count_; }
       set {
-        pid_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "correlation_id" field.</summary>
-    public const int CorrelationIdFieldNumber = 2;
-    private string correlationId_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public string CorrelationId {
-      get { return correlationId_; }
-      set {
-        correlationId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "result" field.</summary>
-    public const int ResultFieldNumber = 3;
-    private int result_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public int Result {
-      get { return result_; }
-      set {
-        result_ = value;
+        count_ = value;
       }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override bool Equals(object other) {
-      return Equals(other as FinishedWorkResponse);
+      return Equals(other as SubmitExpectedResultCount);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool Equals(FinishedWorkResponse other) {
+    public bool Equals(SubmitExpectedResultCount other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!object.Equals(Pid, other.Pid)) return false;
-      if (CorrelationId != other.CorrelationId) return false;
-      if (Result != other.Result) return false;
+      if (Count != other.Count) return false;
       return true;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
-      if (pid_ != null) hash ^= Pid.GetHashCode();
-      if (CorrelationId.Length != 0) hash ^= CorrelationId.GetHashCode();
-      if (Result != 0) hash ^= Result.GetHashCode();
+      if (Count != 0) hash ^= Count.GetHashCode();
       return hash;
     }
 
@@ -592,50 +536,168 @@ namespace ProtoActorDemo.Messages {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
-      if (pid_ != null) {
-        output.WriteRawTag(10);
-        output.WriteMessage(Pid);
-      }
-      if (CorrelationId.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(CorrelationId);
-      }
-      if (Result != 0) {
-        output.WriteRawTag(24);
-        output.WriteInt32(Result);
+      if (Count != 0) {
+        output.WriteRawTag(8);
+        output.WriteInt32(Count);
       }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
-      if (pid_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Pid);
-      }
-      if (CorrelationId.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(CorrelationId);
-      }
-      if (Result != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeInt32Size(Result);
+      if (Count != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeInt32Size(Count);
       }
       return size;
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public void MergeFrom(FinishedWorkResponse other) {
+    public void MergeFrom(SubmitExpectedResultCount other) {
       if (other == null) {
         return;
       }
-      if (other.pid_ != null) {
-        if (pid_ == null) {
-          pid_ = new global::ProtoActorDemo.Messages.PID();
+      if (other.Count != 0) {
+        Count = other.Count;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(pb::CodedInputStream input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            input.SkipLastField();
+            break;
+          case 8: {
+            Count = input.ReadInt32();
+            break;
+          }
         }
-        Pid.MergeFrom(other.Pid);
       }
-      if (other.CorrelationId.Length != 0) {
-        CorrelationId = other.CorrelationId;
+    }
+
+  }
+
+  public sealed partial class SubmitResult : pb::IMessage<SubmitResult> {
+    private static readonly pb::MessageParser<SubmitResult> _parser = new pb::MessageParser<SubmitResult>(() => new SubmitResult());
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pb::MessageParser<SubmitResult> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::ProtoActorDemo.Messages.MessagesReflection.Descriptor.MessageTypes[4]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public SubmitResult() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public SubmitResult(SubmitResult other) : this() {
+      data_ = other.data_;
+      result_ = other.result_;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public SubmitResult Clone() {
+      return new SubmitResult(this);
+    }
+
+    /// <summary>Field number for the "data" field.</summary>
+    public const int DataFieldNumber = 3;
+    private int data_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int Data {
+      get { return data_; }
+      set {
+        data_ = value;
       }
-      if (other.Result != 0) {
+    }
+
+    /// <summary>Field number for the "result" field.</summary>
+    public const int ResultFieldNumber = 4;
+    private float result_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public float Result {
+      get { return result_; }
+      set {
+        result_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override bool Equals(object other) {
+      return Equals(other as SubmitResult);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(SubmitResult other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Data != other.Data) return false;
+      if (Result != other.Result) return false;
+      return true;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Data != 0) hash ^= Data.GetHashCode();
+      if (Result != 0F) hash ^= Result.GetHashCode();
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(pb::CodedOutputStream output) {
+      if (Data != 0) {
+        output.WriteRawTag(24);
+        output.WriteInt32(Data);
+      }
+      if (Result != 0F) {
+        output.WriteRawTag(37);
+        output.WriteFloat(Result);
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public int CalculateSize() {
+      int size = 0;
+      if (Data != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeInt32Size(Data);
+      }
+      if (Result != 0F) {
+        size += 1 + 4;
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(SubmitResult other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Data != 0) {
+        Data = other.Data;
+      }
+      if (other.Result != 0F) {
         Result = other.Result;
       }
     }
@@ -648,19 +710,12 @@ namespace ProtoActorDemo.Messages {
           default:
             input.SkipLastField();
             break;
-          case 10: {
-            if (pid_ == null) {
-              pid_ = new global::ProtoActorDemo.Messages.PID();
-            }
-            input.ReadMessage(pid_);
-            break;
-          }
-          case 18: {
-            CorrelationId = input.ReadString();
-            break;
-          }
           case 24: {
-            Result = input.ReadInt32();
+            Data = input.ReadInt32();
+            break;
+          }
+          case 37: {
+            Result = input.ReadFloat();
             break;
           }
         }

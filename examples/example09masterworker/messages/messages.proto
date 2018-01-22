@@ -12,14 +12,16 @@ message RequestWork {
     PID pid = 1;
 }
 
-message SubmitWorkRequest {
+message SubmitWork {
     PID pid = 1;
-    string correlation_id = 2;
     int32 data = 3;
 }
 
-message FinishedWorkResponse {
-    PID pid = 1;
-    string correlation_id = 2;
-    int32 result = 3;
+message SubmitExpectedResultCount {
+    int32 count = 1;
+}
+
+message SubmitResult {
+    int32 data = 3;
+    float result = 4;
 }
