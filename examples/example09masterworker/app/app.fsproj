@@ -13,6 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cluster.fs" />
+    <Compile Include="Supervision.fs" />
     <Compile Include="MessageHelpers.fs" />
     <Compile Include="HelloProtoActor.fs" />
     <Compile Include="Worker.fs" />

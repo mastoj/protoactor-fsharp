@@ -22,6 +22,7 @@ let main argv =
 
     match argList with
     | [] | "hello"::_ -> HelloProtoActor.hello()
+    | "supervision"::_ | "s"::_ -> Supervision.run()
     | "local"::_ | "l" :: _ -> testLocal()
     | "m"::count::_ -> Master.startMaster (Int32.Parse count) |> ignore
     | "w"::count::_ -> Worker.startWorker (Int32.Parse count) |> ignore

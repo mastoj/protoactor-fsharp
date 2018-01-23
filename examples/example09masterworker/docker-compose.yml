@@ -11,7 +11,7 @@ services:
     build: ./app
     depends_on:
       - master
-    command: "w 10"
+    command: "w 1"
   consul:
     image: "consul:latest"
     container_name: "consul"
