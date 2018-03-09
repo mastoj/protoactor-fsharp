@@ -2,11 +2,11 @@
 // FAKE build script
 // --------------------------------------------------------------------------------------
 
-#r "./packages/FAKE/tools/FakeLib.dll"
+#r @"packages/build/FAKE/tools/FakeLib.dll"
 
 open Fake
-open Fake.AssemblyInfoFile
 open Fake.Git
+open Fake.AssemblyInfoFile
 open Fake.ReleaseNotesHelper
 open System
 
@@ -17,7 +17,7 @@ open System
 let buildDir  = "./build/"
 let appReferences = !! "src/**/*.??proj"
 let examplesReferences = !! "examples/**/*.??proj"
-let dotnetcliVersion = "2.0.2"
+let dotnetcliVersion = DotNetCli.GetDotNetSDKVersionFromGlobalJson()
 let mutable dotnetExePath = "dotnet"
 let project = "protoactor-fsharp"
 let summary = "F# API for proto.actor"
