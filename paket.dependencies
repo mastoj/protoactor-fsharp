@@ -11,8 +11,6 @@ group Library
   nuget Google.Protobuf
   nuget Grpc.Tools
 
-  nuget Microsoft.Extensions.Logging.Abstractions 
-
   clitool Microsoft.DotNet.Watcher.Tools
 
 group Build
