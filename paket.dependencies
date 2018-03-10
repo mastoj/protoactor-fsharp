@@ -2,9 +2,16 @@ framework: auto-detect
 
 source https://www.nuget.org/api/v2
 
-nuget FAKE
 nuget FSharp.Core
-nuget Microsoft.Extensions.Logging.Abstractions 
 
 nuget Proto.Actor 
 nuget Proto.Cluster.Consul 
+
+nuget Microsoft.Extensions.Logging.Abstractions ~> 1.1
+
+clitool Microsoft.DotNet.Watcher.Tools
+
+group Build
+  source https://nuget.org/api/v2
+  framework >= net461
+  nuget FAKE

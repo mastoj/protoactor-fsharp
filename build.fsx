@@ -126,8 +126,6 @@ Target "PublishNuget" (fun _ ->
             WorkingDir = outputDir })
 )
 
-#load "paket-files/fsharp/FAKE/modules/Octokit/Octokit.fsx"
-open Octokit
 
 Target "Release" (fun _ ->
     let user =
