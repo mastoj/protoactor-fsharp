@@ -1,3 +1,2 @@
 group Library
   FSharp.Core
-  Proto.Cluster.Consul

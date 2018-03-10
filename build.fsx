@@ -114,7 +114,6 @@ Target "BuildExamples" (build examplesReferences)
 Target "NuGet" (fun _ ->
     Paket.Pack(fun p ->
         { p with
-            OutputPath = outputDir
             Version = release.NugetVersion
             ReleaseNotes = toLines release.Notes})
 )

@@ -1,15 +1,19 @@
-framework: auto-detect
+group Library
+  source https://api.nuget.org/v3/index.json
 
-source https://www.nuget.org/api/v2
+  nuget FSharp.Core
 
-nuget FSharp.Core
+  nuget Proto.Actor >= 0.1.16
+  nuget Proto.Mailbox >= 0.1.16
+  nuget Proto.Remote >= 0.1.16
+  nuget Proto.Cluster.Consul >= 0.1.16
 
-nuget Proto.Actor 
-nuget Proto.Cluster.Consul 
+  nuget Google.Protobuf
+  nuget Grpc.Tools
 
-nuget Microsoft.Extensions.Logging.Abstractions ~> 1.1
+  nuget Microsoft.Extensions.Logging.Abstractions 
 
-clitool Microsoft.DotNet.Watcher.Tools
+  clitool Microsoft.DotNet.Watcher.Tools
 
 group Build
   source https://nuget.org/api/v2
