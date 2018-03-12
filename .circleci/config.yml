@@ -1,0 +1,11 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: dcurylo/fsharp-mono-netcore:2.0.4
+    steps:
+      - checkout
+      - run:
+          name: Decode Google Cloud Credentials
+          command: ./build.sh BuildExamples
