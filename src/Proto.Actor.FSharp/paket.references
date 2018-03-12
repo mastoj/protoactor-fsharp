@@ -1,3 +1,2 @@
-group Library
-  FSharp.Core
-  Proto.Actor
+Proto.Actor
+FSharp.Core
