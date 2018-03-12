@@ -1,3 +1,6 @@
+Dev: [![CircleCI](https://circleci.com/gh/mastoj/protoactor-fsharp/tree/dev.svg?style=shield)](https://circleci.com/gh/mastoj/protoactor-fsharp)
+Master: [![CircleCI](https://circleci.com/gh/mastoj/protoactor-fsharp.svg?style=shield)](https://circleci.com/gh/mastoj/protoactor-fsharp)
+
 # FSharp wrapper on top of proto.actor
 
 Functional languages usually fits quite well with the actor framework, so having
