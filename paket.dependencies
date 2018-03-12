@@ -1,19 +1,13 @@
-group Library
-  source https://api.nuget.org/v3/index.json
+framework: auto-detect
 
-  nuget FSharp.Core
+source https://www.nuget.org/api/v2
 
-  nuget Proto.Actor >= 0.1.16
-  nuget Proto.Mailbox >= 0.1.16
-  nuget Proto.Remote >= 0.1.16
-  nuget Proto.Cluster.Consul >= 0.1.16
+nuget FAKE
+nuget FSharp.Core
+nuget Microsoft.Extensions.Logging.Abstractions ~> 1.1
 
-  nuget Google.Protobuf
-  nuget Grpc.Tools
+source https://www.myget.org/F/protoactor/api/v3/index.json
+nuget Proto.Actor 0.1.15-build00650-dev
+nuget Proto.Cluster.Consul 0.1.15-build00650-dev
 
-  clitool Microsoft.DotNet.Watcher.Tools
-
-group Build
-  source https://nuget.org/api/v2
-  framework >= net461
-  nuget FAKE
+github fsharp/FAKE modules/Octokit/Octokit.fsx
