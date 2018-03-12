@@ -5,6 +5,7 @@ set -eu
 cd "$(dirname "$0")"
 
 PAKET_EXE=.paket/paket.exe
+PAKET_BOOTSTRAPPER=.paket/paket.bootstrapper.exe
 FAKE_EXE=packages/build/FAKE/tools/FAKE.exe
 
 FSIARGS=""
@@ -26,6 +27,9 @@ run() {
     "$@"
   fi
 }
+
+echo "Bootstrapping paket"
+run $PAKET_BOOTSTRAPPER
 
 echo "Executing Paket..."
 
