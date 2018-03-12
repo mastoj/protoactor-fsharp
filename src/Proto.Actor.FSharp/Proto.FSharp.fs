@@ -51,129 +51,25 @@ module Core =
         | OneForOneStrategy of decider:Decider * maxNrOfRetries:int * withinTimeSpan:TimeSpan option
         | ExponentialBackoffStrategy of backoffWindow:TimeSpan * initialBackoff:TimeSpan
 
-    type IO<'T> =
-        | Input
+    //type Cont<'In, 'Out> = 'In -> 'Out
 
-    type Actor<'Message> = 
-        abstract Receive : unit -> IO<IContext*'Message>
-
-    type Cont<'In, 'Out> = 
-        | Func of ('In -> Cont<'In, 'Out>)
-        | Return of 'Out
-
-    /// The builder for actor computation expression.
-    type ProtoBuilder() = 
-    
-        /// Binds the next message.
-        member __.Bind(m : IO<'In>, f : 'In -> _) = Func(f)
-    
-        /// Binds the result of another actor computation expression.
-        member this.Bind(x : Cont<'In, 'Out1>, f : 'Out1 -> Cont<'In, 'Out2>) : Cont<'In, 'Out2> = 
-            match x with
-            | Func fx -> Func(fun m -> this.Bind(fx m, f))
-            | Return v -> f v
-
-        member __.ReturnFrom(x) = x
-        member __.Return x = Return x
-        member __.Zero() = Return()
-    
-        member this.TryWith(f : unit -> Cont<'In, 'Out>, c : exn -> Cont<'In, 'Out>) : Cont<'In, 'Out> = 
-            try 
-                true, f()
-            with ex -> false, c ex
-            |> function 
-            | true, Func fn -> Func(fun m -> this.TryWith((fun () -> fn m), c))
-            | _, v -> v
-    
-        member this.TryFinally(f : unit -> Cont<'In, 'Out>, fnl : unit -> unit) : Cont<'In, 'Out> = 
-            try 
-                match f() with
-                | Func fn -> Func(fun m -> this.TryFinally((fun () -> fn m), fnl))
-                | r -> 
-                    fnl()
-                    r
-            with ex -> 
-                fnl()
-                reraise()
-    
-        member this.Using(d : #IDisposable, f : _ -> Cont<'In, 'Out>) : Cont<'In, 'Out> = 
-            this.TryFinally((fun () -> f d), 
-                            fun () -> 
-                                if d <> null then d.Dispose())
-    
-        member this.While(condition : unit -> bool, f : unit -> Cont<'In, unit>) : Cont<'In, unit> = 
-            if condition() then 
-                match f() with
-                | Func fn -> 
-                    Func(fun m -> 
-                        fn m |> ignore
-                        this.While(condition, f))
-                | v -> this.While(condition, f)
-            else Return()
-    
-        member __.For(source : 'Iter seq, f : 'Iter -> Cont<'In, unit>) : Cont<'In, unit> = 
-            use e = source.GetEnumerator()
-        
-            let rec loop() = 
-                if e.MoveNext() then 
-                    match f e.Current with
-                    | Func fn -> 
-                        Func(fun m -> 
-                            fn m |> ignore
-                            loop())
-                    | r -> loop()
-                else Return()
-            loop()
-    
-        member __.Delay(f : unit -> Cont<_, _>) = f
-        member __.Run(f : unit -> Cont<_, _>) = f()
-        member __.Run(f : Cont<_, _>) = f
-    
-        member this.Combine(f : unit -> Cont<'In, _>, g : unit -> Cont<'In, 'Out>) : Cont<'In, 'Out> = 
-            match f() with
-            | Func fx -> Func(fun m -> this.Combine((fun () -> fx m), g))
-            | Return _ -> g()
-    
-        member this.Combine(f : Cont<'In, _>, g : unit -> Cont<'In, 'Out>) : Cont<'In, 'Out> = 
-            match f with
-            | Func fx -> Func(fun m -> this.Combine(fx m, g))
-            | Return _ -> g()
-    
-        member this.Combine(f : unit -> Cont<'In, _>, g : Cont<'In, 'Out>) : Cont<'In, 'Out> = 
-            match f() with
-            | Func fx -> Func(fun m -> this.Combine((fun () -> fx m), g))
-            | Return _ -> g
-    
-        member this.Combine(f : Cont<'In, _>, g : Cont<'In, 'Out>) : Cont<'In, 'Out> = 
-            match f with
-            | Func fx -> Func(fun m -> this.Combine(fx m, g))
-            | Return _ -> g
-
-    type FSharpActor<'Message, 'ReturnType>(createActor: Actor<'Message> -> Cont<IContext*'Message, 'Returned>) as this = 
-        let actor = 
-            { 
-                new Actor<'T1> 
-                    with 
-                        member __.Receive() = Input }
-        let mutable state = createActor actor
-
+    type FSharpActor<'Message, 'State>(handler: IContext -> 'Message -> 'State -> Async<'State>, initialState: 'State) = 
+        let mutable state = initialState
         interface IActor with
             member this.ReceiveAsync(context: IContext) =
                 async {
-                    match state with
-                    | Func f ->
-                        match context.Message with
-                        | :? 'T1 as msg ->
-                            try
-                                state <- f (context, msg)
-                            with
-                            | x -> 
-                                printfn "Failed to execute actor: %A" x
-                                raise x
-                        | _ -> ()
-                    | Return x -> x
+                    match context.Message with
+                    | :? 'Message as msg ->
+                        try
+                            let! state' = handler context msg state 
+                            state <- state'
+                        with
+                        | x -> 
+                            printfn "Failed to execute actor: %A" x
+                            raise x
+                    | _ -> ()
                 } |> Async.startAsPlainTask
-    let proto = ProtoBuilder()
+
 
 [<RequireQualifiedAccess>]
 module Actor =
@@ -183,28 +79,42 @@ module Actor =
 
     let spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
 
-    let initProps (createActor: Actor<'Message> -> Cont<IContext*'Message, 'Returned>) =
-        let producer () = new FSharpActor<'Message, 'Returned>(createActor) :> IActor
+    let initProps (producer: unit -> IActor) =
         let producerFunc = System.Func<_>(producer)
         Actor.FromProducer(producerFunc)
 
-    let withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) (mailbox : Actor<'Message>) =
-        let rec loop state = 
-            proto {
-                let! (ctx, msg) = mailbox.Receive()
-                let state' = state |> handler ctx msg
-                return! loop state'
-            }
-        loop initialState
+    let withState2Async (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
+        fun () -> new FSharpActor<'Message, 'State>(handler, initialState) :> IActor
+
+    let withStateAsync (handler: 'Message -> 'State -> Async<'State>) (initialState: 'State) =
+        withState2Async (fun _ m s -> handler m s) initialState
+
+    let createAsync (handler: 'Message -> Async<unit>) =
+        withState2Async (fun _ m _ -> handler m) ()
+
+    let create2Async (handler: IContext -> 'Message -> Async<unit>) =
+        withState2Async (fun context message _ -> handler context message) ()
+
+    let withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) = 
+        async { 
+            return withState2Async (fun ctx msg state -> async { return handler ctx msg state }) initialState 
+        } |> Async.RunSynchronously
 
     let withState (handler: 'Message -> 'State -> 'State) (initialState: 'State) =
-        withState2 (fun _ m s -> handler m s) initialState
+        async { 
+            return withStateAsync (fun msg state -> async { return handler msg state }) initialState 
+        } |> Async.RunSynchronously
 
     let create (handler: 'Message -> unit) =
-        withState2 (fun _ m _ -> handler m) ()
+        async { 
+            return createAsync (fun msg -> async { return handler msg })  
+        } |> Async.RunSynchronously
 
     let create2 (handler: IContext -> 'Message -> unit) =
-        withState2 (fun context message _ -> handler context message) ()
+        async { 
+            return create2Async (fun ctx msg -> async { return handler ctx msg })  
+        } |> Async.RunSynchronously
+
 
 [<RequireQualifiedAccess>]
 module Props = 

@@ -37,33 +37,12 @@ let echoWithResponseAndState() =
     "Hello world" >? pid |> Async.RunSynchronously |> printfn "Response: %A"
     "Hello world again" >? pid |> Async.RunSynchronously |> printfn "Response: %A"
 
-let echoWithCompExpression() =
-    let handler (actor: Actor<obj>) =
-        let rec loop state =
-            proto {
-                let! (ctx, msg) = actor.Receive()
-                let state' =
-                    match msg with
-                    | :? String as s ->
-                        let state' = sprintf "%s %s" (state.ToString()) (msg.ToString())
-                        sprintf "Current state: %A" state' >! ctx.Sender
-                        state'
-                    | x -> state
-                return! loop state'
-            }
-        loop ""
-
-    let pid = handler |> Actor.initProps |> Actor.spawn
-    "Hello world" >? pid |> Async.RunSynchronously |> printfn "Response (comp): %A"
-    "Hello world again" >? pid |> Async.RunSynchronously |> printfn "Response (comp): %A"
-
 [<EntryPoint>]
 let main argv =
     echoActor()
     echoWithStateActor()
     echoWithResponse()
     echoWithResponseAndState()
-    echoWithCompExpression()
 
     Console.ReadLine() |> ignore
     0 // return an integer exit code
