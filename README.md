@@ -1,5 +1,5 @@
-Dev: [![CircleCI](https://circleci.com/gh/mastoj/protoactor-fsharp/tree/dev.svg?style=shield)](https://circleci.com/gh/mastoj/protoactor-fsharp)
-Master: [![CircleCI](https://circleci.com/gh/mastoj/protoactor-fsharp.svg?style=shield)](https://circleci.com/gh/mastoj/protoactor-fsharp)
+Dev: [![CircleCI](https://circleci.com/gh/mastoj/protoactor-fsharp.svg?style=shield)](https://circleci.com/gh/mastoj/protoactor-fsharp)
+Master: [![CircleCI](https://circleci.com/gh/mastoj/protoactor-fsharp/tree/master.svg?style=shield)](https://circleci.com/gh/mastoj/protoactor-fsharp)
 
 # FSharp wrapper on top of proto.actor
 
