@@ -1,34 +1,45 @@
-#!/bin/bash
-if test "$OS" = "Windows_NT"
+#!/usr/bin/env bash
+
+set -eu
+
+cd "$(dirname "$0")"
+
+PAKET_EXE=.paket/paket.exe
+PAKET_BOOTSTRAPPER=.paket/paket.bootstrapper.exe
+FAKE_EXE=packages/build/FAKE/tools/FAKE.exe
+
+FSIARGS=""
+FSIARGS2=""
+OS=${OS:-"unknown"}
+if [ "$OS" != "Windows_NT" ]
 then
-  # use .Net
-
-  .paket/paket.bootstrapper.exe
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
-
-  .paket/paket.exe restore
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
-
-  packages/FAKE/tools/FAKE.exe $@ --fsiargs build.fsx
-else
-  # use mono
-  # use mono
-  mono .paket/paket.bootstrapper.exe
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
-
-  mono .paket/paket.exe restore
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-  	exit $exit_code
-  fi
-  mono packages/FAKE/tools/FAKE.exe $@ --fsiargs -d:MONO build.fsx
+  # Can't use FSIARGS="--fsiargs -d:MONO" in zsh, so split it up
+  # (Can't use arrays since dash can't handle them)
+  FSIARGS="--fsiargs"
+  FSIARGS2="-d:MONO"
 fi
+
+run() {
+  if [ "$OS" != "Windows_NT" ]
+  then
+    mono "$@"
+  else
+    "$@"
+  fi
+}
+
+echo "Bootstrapping paket"
+run $PAKET_BOOTSTRAPPER
+
+echo "Executing Paket..."
+
+FILE='paket.lock'     
+if [ -f $FILE ]; then
+   echo "paket.lock file found, restoring packages..."
+   run $PAKET_EXE restore
+else
+   echo "paket.lock was not found, installing packages..."
+   run $PAKET_EXE install
+fi
+
+run $FAKE_EXE "$@" $FSIARGS $FSIARGS2 build.fsx
