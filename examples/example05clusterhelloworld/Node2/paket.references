@@ -1,2 +1,3 @@
-Proto.Cluster.Consul
-FSharp.Core
+group Library
+    Proto.Cluster.Consul
+    FSharp.Core

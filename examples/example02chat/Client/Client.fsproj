@@ -14,9 +14,5 @@
   <ItemGroup>
     <Compile Include="Program.fs" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Proto.Actor" Version="0.1.13" />
-    <PackageReference Include="Proto.Mailbox" Version="0.1.13" />
-    <PackageReference Include="Proto.Remote" Version="0.1.13" />
-  </ItemGroup>
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 </Project>
