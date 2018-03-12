@@ -3,8 +3,6 @@ namespace Proto.FSharp
 open Proto
 open System.Threading.Tasks
 open System
-open System.IO
-open Proto
 
 module Async = 
     let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
@@ -149,10 +147,10 @@ module Core =
             | Func fx -> Func(fun m -> this.Combine(fx m, g))
             | Return _ -> g
 
-    type FSharpActor<'Message, 'ReturnType>(createActor: Actor<'Message> -> Cont<IContext*'Message, 'Returned>) as this = 
+    type FSharpActor<'Message, 'Returned>(createActor: Actor<'Message> -> Cont<IContext*'Message, 'Returned>) = 
         let actor = 
             { 
-                new Actor<'T1> 
+                new Actor<'Message> 
                     with 
                         member __.Receive() = Input }
         let mutable state = createActor actor
@@ -163,7 +161,7 @@ module Core =
                     match state with
                     | Func f ->
                         match context.Message with
-                        | :? 'T1 as msg ->
+                        | :? 'Message as msg ->
                             try
                                 state <- f (context, msg)
                             with
@@ -171,7 +169,7 @@ module Core =
                                 printfn "Failed to execute actor: %A" x
                                 raise x
                         | _ -> ()
-                    | Return x -> x
+                    | Return _ -> ()
                 } |> Async.startAsPlainTask
     let proto = ProtoBuilder()
 

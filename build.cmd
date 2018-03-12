@@ -1,9 +1,14 @@
 @echo off
 cls
 
-.paket\paket.exe restore
+IF EXIST "paket.lock" (
+  .paket\paket.exe restore
+) ELSE (
+  .paket\paket.exe install
+)
+
 if errorlevel 1 (
   exit /b %errorlevel%
 )
 
-packages\FAKE\tools\FAKE.exe build.fsx %*
+packages\build\FAKE\tools\FAKE.exe build.fsx %*

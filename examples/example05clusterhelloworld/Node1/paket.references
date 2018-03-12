@@ -1,2 +1,5 @@
-Proto.Cluster.Consul
-FSharp.Core
+group Library
+  Proto.Mailbox
+  Proto.Remote
+  Proto.Cluster.Consul
+  FSharp.Core
