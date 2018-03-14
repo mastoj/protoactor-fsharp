@@ -6,6 +6,7 @@ group Library
   nuget Proto.Actor >= 0.1.16
   nuget Proto.Mailbox >= 0.1.16
   nuget Proto.Remote >= 0.1.16
+  nuget Proto.Persistence >= 0.1.16
   nuget Proto.Cluster.Consul >= 0.1.16
 
   nuget Google.Protobuf

@@ -55,6 +55,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Node1", "examples\example08
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Node2", "examples\example08kubernetescluster\Node2\Node2.fsproj", "{88E537D6-75FC-4D77-9C38-C07B91886B7A}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Proto.Actor.FSharp.Persistence", "src\Proto.Actor.FSharp.Persistence\Proto.Actor.FSharp.Persistence.fsproj", "{E031AD21-78C2-484A-8E4E-9D0B8316C563}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -269,6 +271,18 @@ Global
 		{88E537D6-75FC-4D77-9C38-C07B91886B7A}.Release|x64.Build.0 = Release|Any CPU
 		{88E537D6-75FC-4D77-9C38-C07B91886B7A}.Release|x86.ActiveCfg = Release|Any CPU
 		{88E537D6-75FC-4D77-9C38-C07B91886B7A}.Release|x86.Build.0 = Release|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Debug|x64.Build.0 = Debug|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Debug|x86.Build.0 = Debug|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Release|x64.ActiveCfg = Release|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Release|x64.Build.0 = Release|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Release|x86.ActiveCfg = Release|Any CPU
+		{E031AD21-78C2-484A-8E4E-9D0B8316C563}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
