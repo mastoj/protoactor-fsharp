@@ -3,6 +3,8 @@ namespace Proto.FSharp
 open Proto
 open System.Threading.Tasks
 open System
+open System.IO
+open Proto
 
 module Async = 
     let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)

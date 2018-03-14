@@ -1,4 +1,4 @@
 group Library
   FSharp.Core
   Google.Protobuf
-  Grpc.Tools
+  Grpc.Tools 

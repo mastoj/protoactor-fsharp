@@ -63,7 +63,7 @@ NUGET
     Microsoft.DotNet.Watcher.Tools (2.0) - clitool: true
       Microsoft.NETCore.App (>= 2.0) - restriction: >= netcoreapp2.0
     Microsoft.Extensions.DependencyInjection.Abstractions (2.0) - restriction: >= netstandard2.0
-    Microsoft.Extensions.Logging.Abstractions (2.0)
+    Microsoft.Extensions.Logging.Abstractions (2.0) - restriction: || (>= net452) (>= netstandard1.5)
     Microsoft.Extensions.Options (2.0) - restriction: || (>= net452) (>= netstandard1.5)
       Microsoft.Extensions.DependencyInjection.Abstractions (>= 2.0) - restriction: >= netstandard2.0
       Microsoft.Extensions.Primitives (>= 2.0) - restriction: >= netstandard2.0

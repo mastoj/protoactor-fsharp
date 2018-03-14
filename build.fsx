@@ -1,12 +1,11 @@
 // --------------------------------------------------------------------------------------
 // FAKE build script
 // --------------------------------------------------------------------------------------
-
 #r @"packages/build/FAKE/tools/FakeLib.dll"
 
 open Fake
-open Fake.Git
 open Fake.AssemblyInfoFile
+open Fake.Git
 open Fake.ReleaseNotesHelper
 open System
 
@@ -114,6 +113,7 @@ Target "BuildExamples" (build examplesReferences)
 Target "NuGet" (fun _ ->
     Paket.Pack(fun p ->
         { p with
+            OutputPath = outputDir
             Version = release.NugetVersion
             ReleaseNotes = toLines release.Notes})
 )
@@ -124,7 +124,6 @@ Target "PublishNuget" (fun _ ->
             PublishUrl = "https://www.nuget.org"
             WorkingDir = outputDir })
 )
-
 
 Target "Release" (fun _ ->
     let user =
