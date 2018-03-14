@@ -49,14 +49,20 @@ module Core =
         | OneForOneStrategy of decider:Decider * maxNrOfRetries:int * withinTimeSpan:TimeSpan option
         | ExponentialBackoffStrategy of backoffWindow:TimeSpan * initialBackoff:TimeSpan
 
-    //type Cont<'In, 'Out> = 'In -> 'Out
-
-    type FSharpActor<'Message, 'State>(handler: IContext -> 'Message -> 'State -> Async<'State>, initialState: 'State) = 
+    type FSharpActor<'Message, 'State>(systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>, handler: IContext -> 'Message -> 'State -> Async<'State>, initialState: 'State) = 
         let mutable state = initialState
         interface IActor with
             member this.ReceiveAsync(context: IContext) =
                 async {
                     match context.Message with
+                    | IsSystemMessage msg ->
+                        try
+                            let! state' = systemMessageHandler context msg state 
+                            state <- state'
+                        with
+                        | x -> 
+                            printfn "Failed to execute actor: %A" x
+                            raise x
                     | :? 'Message as msg ->
                         try
                             let! state' = handler context msg state 
@@ -65,7 +71,7 @@ module Core =
                         | x -> 
                             printfn "Failed to execute actor: %A" x
                             raise x
-                    | _ -> ()
+                    | _ -> ()                
                 } |> Async.startAsPlainTask
 
 
@@ -81,17 +87,23 @@ module Actor =
         let producerFunc = System.Func<_>(producer)
         Actor.FromProducer(producerFunc)
 
+    let withState3Async (systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>) (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
+        fun () -> new FSharpActor<'Message, 'State>(systemMessageHandler, handler, initialState) :> IActor
+
     let withState2Async (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
-        fun () -> new FSharpActor<'Message, 'State>(handler, initialState) :> IActor
+        withState3Async (fun _ _ s -> async { return s }) handler  initialState
 
     let withStateAsync (handler: 'Message -> 'State -> Async<'State>) (initialState: 'State) =
         withState2Async (fun _ m s -> handler m s) initialState
 
-    let createAsync (handler: 'Message -> Async<unit>) =
-        withState2Async (fun _ m _ -> handler m) ()
+    let create3Async (systemMessageHandler: IContext -> SystemMessage -> Async<unit>) (handler: IContext -> 'Message -> Async<unit>) =
+        withState3Async (fun context message _ -> systemMessageHandler context message) (fun context message _ -> handler context message) ()
 
     let create2Async (handler: IContext -> 'Message -> Async<unit>) =
         withState2Async (fun context message _ -> handler context message) ()
+
+    let createAsync (handler: 'Message -> Async<unit>) =
+        withState2Async (fun _ m _ -> handler m) ()
 
     let withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) = 
         async { 
