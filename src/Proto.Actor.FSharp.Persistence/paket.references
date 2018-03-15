@@ -1,0 +1,4 @@
+group Library
+  FSharp.Core
+  Proto.Actor
+  Proto.Persistence
