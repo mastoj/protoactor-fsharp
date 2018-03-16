@@ -8,7 +8,6 @@ namespace Avalanchain.Core
 
 open Proto.FSharp
 
-[<RequireQualifiedAccess>]
 module Persistence = 
     open Proto
     open Proto.Persistence
