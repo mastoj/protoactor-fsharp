@@ -4,8 +4,6 @@ open Proto
 open System.Threading.Tasks
 open System
 
-namespace Avalanchain.Core
-
 open Proto.FSharp
 
 module Persistence = 
