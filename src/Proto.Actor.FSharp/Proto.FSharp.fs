@@ -3,8 +3,6 @@ namespace Proto.FSharp
 open Proto
 open System.Threading.Tasks
 open System
-open System.IO
-open Proto
 
 module Async = 
     let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
@@ -88,6 +86,13 @@ module Actor =
     let initProps (producer: unit -> IActor) =
         let producerFunc = System.Func<_>(producer)
         Actor.FromProducer(producerFunc)
+
+    let spawnProps = initProps >> spawn
+
+    let spawnPropsPrefix prefix = initProps >> spawnPrefix prefix
+
+    let spawnPropsNamed name = initProps >> spawnNamed name
+
 
     let withState3Async (systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>) (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
         fun () -> new FSharpActor<'Message, 'State>(systemMessageHandler, handler, initialState) :> IActor

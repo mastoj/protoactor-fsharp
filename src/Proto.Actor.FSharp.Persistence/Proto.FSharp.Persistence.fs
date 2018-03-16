@@ -14,9 +14,6 @@ module Persistence =
     open Proto.Persistence
     open Proto.Persistence.SnapshotStrategies
 
-    // type PersistenceActor() =
-    //     interface IActor with
-
     let private applyEvent recoverEvent replayEvent persistedEvent state (evt: Event) =
         match evt with
         | :? RecoverEvent as e -> 
@@ -58,7 +55,7 @@ module Persistence =
         let res = processCommand state persistence.Index cmd
         match res with
         | Ok evt -> async { do! persistence.PersistEventAsync evt |> Async.AwaitTask 
-                            ctx.Sender <! Ok() }
+                            if isNull(ctx.Sender) |> not then ctx.Sender <! Ok() }
         | Error e -> async { e >! ctx.Sender }
 
     [<RequireQualifiedAccess>]
@@ -235,12 +232,22 @@ module Persistence =
                 persistentID
                 initialState
 
-    let getEvents (eventStore: IEventStore) (persistentID: string) (indexStart: int64) (indexEnd: int64) (handler: _ -> unit) =
+        let persistLight
+            (eventStore: IEventStore) 
+            (persistentID: string)
+            = 
+            persist 
+                eventStore 
+                (fun s _ _ -> s) 
+                persistentID
+                None                
+
+    let getEvents<'T> (handler: 'T -> unit) (persistentID: string) (indexStart: int64) (indexEnd: int64) (eventStore: IEventStore) =
         eventStore.GetEventsAsync (persistentID, indexStart, indexEnd,
             System.Action<_>(fun o ->   if not (isNull o) then 
                                             match o with
                                             | o when isNull o -> ()
-                                            | :? _ as oo -> handler oo
+                                            | :? 'T as oo -> handler oo
                                             | _ -> failwithf "Unsupported event type: '%s'" (o.GetType().Name)
                                         else ())) |> Async.AwaitTask
 
