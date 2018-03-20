@@ -5,8 +5,7 @@ open System.Threading.Tasks
 open System
 
 module Async = 
-    let inline startAsPlainTask (work : Async<unit>) = work |> Async.StartAsTask :> Task //Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
-    //let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
+    let inline startAsPlainTask (work : Async<unit>) = Async.StartAsTask work :> Task 
 
 module System = 
     let toFunc<'a> f = Func<'a>(f)
@@ -78,78 +77,68 @@ module Core =
 
 [<RequireQualifiedAccess>]
 module Actor =
-    let spawn (props: Props) = Actor.Spawn(props)
+    let inline spawn (props: Props) = Actor.Spawn(props)
 
-    let spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
+    let inline spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
 
-    let spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
+    let inline spawnNamed name (props: Props) = Actor.SpawnNamed(props, name)
 
-    let initProps (producer: unit -> IActor) =
+    let inline initProps (producer: unit -> IActor) =
         let producerFunc = System.Func<_>(producer)
         Actor.FromProducer(producerFunc)
 
-    let spawnProps = initProps >> spawn
+    let inline spawnProps p = p |> initProps |> spawn
 
-    let spawnPropsPrefix prefix = initProps >> spawnPrefix prefix
+    let inline spawnPropsPrefix prefix = initProps >> spawnPrefix prefix
 
-    let spawnPropsNamed name = initProps >> spawnNamed name
+    let inline spawnPropsNamed name = initProps >> spawnNamed name
 
 
-    let withState3Async (systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>) (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
+    let inline withState3Async (systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>) (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
         fun () -> new FSharpActor<'Message, 'State>(systemMessageHandler, handler, initialState) :> IActor
 
-    let withState2Async (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
+    let inline withState2Async (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
         withState3Async (fun _ _ s -> async { return s }) handler  initialState
 
-    let withStateAsync (handler: 'Message -> 'State -> Async<'State>) (initialState: 'State) =
+    let inline withStateAsync (handler: 'Message -> 'State -> Async<'State>) (initialState: 'State) =
         withState2Async (fun _ m s -> handler m s) initialState
 
-    let create3Async (systemMessageHandler: IContext -> SystemMessage -> Async<unit>) (handler: IContext -> 'Message -> Async<unit>) =
+    let inline create3Async (systemMessageHandler: IContext -> SystemMessage -> Async<unit>) (handler: IContext -> 'Message -> Async<unit>) =
         withState3Async (fun context message _ -> systemMessageHandler context message) (fun context message _ -> handler context message) ()
 
-    let create2Async (handler: IContext -> 'Message -> Async<unit>) =
+    let inline create2Async (handler: IContext -> 'Message -> Async<unit>) =
         withState2Async (fun context message _ -> handler context message) ()
 
-    let createAsync (handler: 'Message -> Async<unit>) =
+    let inline createAsync (handler: 'Message -> Async<unit>) =
         withState2Async (fun _ m _ -> handler m) ()
 
-    let withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) = 
-        async { 
-            return withState2Async (fun ctx msg state -> async { return handler ctx msg state }) initialState 
-        } |> Async.RunSynchronously
+    let inline withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) = 
+        withState2Async (fun ctx msg state -> async { return handler ctx msg state }) initialState 
 
-    let withState (handler: 'Message -> 'State -> 'State) (initialState: 'State) =
-        async { 
-            return withStateAsync (fun msg state -> async { return handler msg state }) initialState 
-        } |> Async.RunSynchronously
+    let inline withState (handler: 'Message -> 'State -> 'State) (initialState: 'State) =
+        withStateAsync (fun msg state -> async { return handler msg state }) initialState 
 
-    let create (handler: 'Message -> unit) =
-        async { 
-            return createAsync (fun msg -> async { return handler msg })  
-        } |> Async.RunSynchronously
+    let inline create (handler: 'Message -> unit) = createAsync (fun msg -> async { return handler msg })  
 
-    let create2 (handler: IContext -> 'Message -> unit) =
-        async { 
-            return create2Async (fun ctx msg -> async { return handler ctx msg })  
-        } |> Async.RunSynchronously
+    let inline create2 (handler: IContext -> 'Message -> unit) = create2Async (fun ctx msg -> async { return handler ctx msg })
 
 
 [<RequireQualifiedAccess>]
 module Props = 
     open System
 
-    let newProps() = Props()
+    let inline newProps() = Props()
 
-    let withProducer producer (props: Props) = 
+    let inline withProducer producer (props: Props) = 
         props.WithProducer(producer)
 
-    let withDispatcher dispatcher (props: Props) = 
+    let inline withDispatcher dispatcher (props: Props) = 
         props.WithDispatcher(dispatcher)
 
-    let withMailbox mailbox (props: Props) = 
+    let inline withMailbox mailbox (props: Props) = 
         props.WithMailbox(mailbox)
 
-    let withChildSupervisorStrategy supervisorStrategy (props: Props) =
+    let inline withChildSupervisorStrategy supervisorStrategy (props: Props) =
         let strategy =
             match supervisorStrategy with
             | DefaultStrategy -> Supervision.DefaultStrategy
@@ -169,49 +158,37 @@ module Props =
                 Proto.ExponentialBackoffStrategy(backoffWindow, initialBackoff) :> ISupervisorStrategy
         props.WithChildSupervisorStrategy(strategy)
 
-    let withReceiveMiddleware (middleware: Receive -> Receive) (props: Props) =
+    let inline withReceiveMiddleware (middleware: Receive -> Receive) (props: Props) =
         props.WithReceiveMiddleware([|toFunc2(middleware)|])
 
-    let withReceiveMiddlewares (middlewares: (Receive -> Receive) list) (props: Props) =
+    let inline withReceiveMiddlewares (middlewares: (Receive -> Receive) list) (props: Props) =
         middlewares 
         |> List.map toFunc2
         |> Array.ofList
         |> (fun arr -> props.WithReceiveMiddleware(arr))
 
-    let withSenderMiddleware (middleware: Sender -> Sender) (props: Props) =
+    let inline withSenderMiddleware (middleware: Sender -> Sender) (props: Props) =
         props.WithSenderMiddleware([|toFunc2(middleware)|])
 
-    let withSenderMiddlewares (middlewares: (Sender -> Sender) list) (props: Props) =
+    let inline withSenderMiddlewares (middlewares: (Sender -> Sender) list) (props: Props) =
         middlewares 
         |> List.map toFunc2
         |> Array.ofList
         |> (fun arr -> props.WithSenderMiddleware(arr))
 
-    let withSpawner spawner (props: Props) = 
+    let inline withSpawner spawner (props: Props) = 
         props.WithSpawner(spawner)
 
 [<AutoOpen>]
 module Pid = 
-    let tell (pid: PID) msg = 
+    let inline tell (pid: PID) msg = 
         pid.Tell(msg)
 
-    let ask (pid: PID) msg = 
+    let inline ask (pid: PID) msg = 
         pid.RequestAsync(msg) |> Async.AwaitTask
 
-    let (<!) (pid: PID) msg = tell pid msg
-    let (>!) msg (pid: PID) = tell pid msg
-    let (<?) (pid: PID) msg = ask pid msg
-    let (>?) msg (pid: PID) = ask pid msg
+    let inline (<!) (pid: PID) msg = tell pid msg
+    let inline (>!) msg (pid: PID) = tell pid msg
+    let inline (<?) (pid: PID) msg = ask pid msg
+    let inline (>?) msg (pid: PID) = ask pid msg
 
-    //type PID<'T>(address, id) = inherit PID(address, id)
-
-    //let tell (pid: PID) msg = 
-    //    pid.Tell(msg)
-
-    //let ask (pid: PID) msg = 
-    //    pid.RequestAsync(msg) |> Async.AwaitTask
-
-    //let (<!) (pid: PID) msg = tell pid msg
-    //let (>!) msg (pid: PID) = tell pid msg
-    //let (<?) (pid: PID) msg = ask pid msg
-    //let (>?) msg (pid: PID) = ask pid msg
