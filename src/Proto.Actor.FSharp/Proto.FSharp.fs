@@ -5,7 +5,8 @@ open System.Threading.Tasks
 open System
 
 module Async = 
-    let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
+    let inline startAsPlainTask (work : Async<unit>) = work |> Async.StartAsTask :> Task //Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
+    //let inline startAsPlainTask (work : Async<unit>) = Task.Factory.StartNew(fun () -> work |> Async.RunSynchronously)
 
 module System = 
     let toFunc<'a> f = Func<'a>(f)
@@ -201,3 +202,16 @@ module Pid =
     let (>!) msg (pid: PID) = tell pid msg
     let (<?) (pid: PID) msg = ask pid msg
     let (>?) msg (pid: PID) = ask pid msg
+
+    //type PID<'T>(address, id) = inherit PID(address, id)
+
+    //let tell (pid: PID) msg = 
+    //    pid.Tell(msg)
+
+    //let ask (pid: PID) msg = 
+    //    pid.RequestAsync(msg) |> Async.AwaitTask
+
+    //let (<!) (pid: PID) msg = tell pid msg
+    //let (>!) msg (pid: PID) = tell pid msg
+    //let (<?) (pid: PID) msg = ask pid msg
+    //let (>?) msg (pid: PID) = ask pid msg

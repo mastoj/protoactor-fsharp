@@ -22,6 +22,6 @@ let main argv =
     let endTime = DateTime.Now
     let duration = (endTime - startTime)
     printfn "%A" duration
-    printfn "Messages per second %f" ((float numberOfMessages) / (float duration.Seconds))
+    printfn "Messages per second %f" ((float numberOfMessages) / (float duration.TotalSeconds))
     Console.ReadLine() |> ignore
     0 // return an integer exit code
