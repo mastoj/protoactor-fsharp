@@ -26,7 +26,7 @@ module Core =
         | ReceiveTimeout of ReceiveTimeout
         | Continuation of Continuation
 
-    let (|IsSystemMessage|_|) (msg:obj) = 
+    let inline (|IsSystemMessage|_|) (msg: obj) = 
         match msg with
         | :? AutoReceiveMessage as m -> Some(AutoReceiveMessage m)
         | :? Terminated as m -> Some(Terminated m)
@@ -49,28 +49,70 @@ module Core =
         | OneForOneStrategy of decider:Decider * maxNrOfRetries:int * withinTimeSpan:TimeSpan option
         | ExponentialBackoffStrategy of backoffWindow:TimeSpan * initialBackoff:TimeSpan
 
-    type FSharp3AsyncActor<'Message, 'State>(handler: IContext -> obj -> 'State -> Async<'State>, initialState: 'State) = 
+    type Effect<'State> = obj -> (IContext -> 'State -> 'State) option
+    type AsyncEffect<'State> = obj -> (IContext -> 'State -> Async<'State>) option
+
+    let inline (<|>) (e1: Effect<'State>) (e2: Effect<'State>) = 
+        fun o -> e1 o |> Option.orElse (e2 o)
+
+    let inline (<||>) (e1: AsyncEffect<'State>) (e2: AsyncEffect<'State>) = 
+        fun o -> e1 o |> Option.orElse (e2 o)
+
+    let inline (<&>) (e1: Effect<'State>) (e2: Effect<'State>) = 
+        fun (o: obj) ->
+            match (e1 o), (e2 o) with
+            | Some f1, Some f2 -> Some <| fun ctx state -> state |> f1 ctx |> f2 ctx
+            | Some f1, None -> Some f1
+            | None, Some f2 -> Some f2
+            | None, None -> None
+
+    let inline (<&&>) (e1: AsyncEffect<'State>) (e2: AsyncEffect<'State>) = 
+        fun (o: obj) ->
+            match (e1 o), (e2 o) with
+            | Some f1, Some f2 -> Some <| fun ctx state -> async { let! state' = state |> f1 ctx 
+                                                                   return! state' |> f2 ctx }
+            | Some f1, None -> Some f1
+            | None, Some f2 -> Some f2
+            | None, None -> None
+
+    let inline typedEffect (handler: IContext -> 'Message -> 'State -> 'T) = 
+        fun (o: obj) -> match o with    
+                        | :? 'Message as msg -> Some <| fun ctx state -> handler ctx msg state
+                        | _ -> None 
+
+    let inline systemEffect (handler: IContext -> SystemMessage -> 'State -> 'T) = 
+        fun (o: obj) -> match o with    
+                        | IsSystemMessage msg -> Some <| fun ctx state -> handler ctx msg state
+                        | _ -> None 
+
+    type FSharpAsyncActor<'State>(handler: AsyncEffect<'State>, initialState: 'State) = 
         let mutable state = initialState
         interface IActor with
             member this.ReceiveAsync(context: IContext) =
                 async {
                     try
-                        let! state' = handler context context.Message state 
-                        state <- state'
+                        let applied = handler context.Message 
+                        match applied with 
+                        | Some f -> let! state' = f context state 
+                                    state <- state'
+                        | None -> ()
                     with
                     | x -> 
                         printfn "Failed to execute actor: %A" x
                         raise x
                 } |> Async.startAsPlainTask
 
-    type FSharp3Actor<'Message, 'State>(handler: IContext -> obj -> 'State -> 'State, initialState: 'State) = 
+    type FSharpActor<'State>(handler: Effect<'State>, initialState: 'State) = 
         let mutable state = initialState
         interface IActor with
             member this.ReceiveAsync(context: IContext) =
                 async {
                     try
-                        let state' = handler context context.Message state  
-                        state <- state'
+                        let applied = handler context.Message 
+                        match applied with 
+                        | Some f -> let state' = f context state 
+                                    state <- state'
+                        | None -> ()
                     with
                     | x -> 
                         printfn "Failed to execute actor: %A" x
@@ -79,18 +121,6 @@ module Core =
 
 [<RequireQualifiedAccess>]
 module Actor =
-    let inline private composeAsyncHandlers (systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>) (handler: IContext -> 'Message -> 'State -> Async<'State>) =
-        fun context (msg: obj) state ->  match msg with
-                                            | IsSystemMessage msg -> systemMessageHandler context msg state 
-                                            | :? 'Message as msg -> handler context msg state
-                                            | _ -> async { return state }
-
-    let inline private composeHandlers (systemMessageHandler: IContext -> SystemMessage -> 'State -> 'State) (handler: IContext -> 'Message -> 'State -> 'State) =
-        fun context (msg: obj) state ->  match msg with
-                                            | IsSystemMessage msg -> systemMessageHandler context msg state 
-                                            | :? 'Message as msg -> handler context msg state
-                                            | _ -> state 
-
     let inline spawn (props: Props) = Actor.Spawn(props)
 
     let inline spawnPrefix prefix (props: Props) = Actor.SpawnPrefix(props, prefix)
@@ -107,13 +137,10 @@ module Actor =
 
 
     let inline withState3Async (systemMessageHandler: IContext -> SystemMessage -> 'State -> Async<'State>) (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
-        fun () -> new FSharp3AsyncActor<'Message, 'State>((composeAsyncHandlers systemMessageHandler handler), initialState) :> IActor
-
-    let inline withObjState2Async (handler: IContext -> obj -> 'State -> Async<'State>) (initialState: 'State) = // TODO: decide on the name and create corresponding create()s
-        withState3Async handler handler initialState
-    
+        fun () -> new FSharpAsyncActor<'State>(systemEffect(systemMessageHandler) <&&> typedEffect(handler), initialState) :> IActor
+   
     let inline withState2Async (handler: IContext -> 'Message -> 'State -> Async<'State>) (initialState: 'State) =
-        withState3Async (fun _ _ s -> async { return s }) handler  initialState
+        fun () -> new FSharpAsyncActor<'State>(typedEffect handler, initialState) :> IActor
 
     let inline withStateAsync (handler: 'Message -> 'State -> Async<'State>) (initialState: 'State) =
         withState2Async (fun _ m s -> handler m s) initialState
@@ -128,13 +155,10 @@ module Actor =
         withState2Async (fun _ m _ -> handler m) ()
 
     let inline withState3 (systemMessageHandler: IContext -> SystemMessage -> 'State -> 'State) (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) =
-        fun () -> new FSharp3Actor<'Message, 'State>((composeHandlers systemMessageHandler handler), initialState) :> IActor
+        fun () -> new FSharpActor<'State>(systemEffect(systemMessageHandler) <&> typedEffect(handler), initialState) :> IActor
 
     let inline withState2 (handler: IContext -> 'Message -> 'State -> 'State) (initialState: 'State) =
-        withState3 (fun _ _ s -> s) handler  initialState
-
-    let inline withObjState2 (handler: IContext -> obj -> 'State -> 'State) (initialState: 'State) = // TODO: decide on the name and create corresponding create()s
-        withState3 handler handler initialState
+        fun () -> new FSharpActor<'State>(typedEffect handler, initialState) :> IActor
 
     let inline withState (handler: 'Message -> 'State -> 'State) (initialState: 'State) =
         withState2 (fun _ m s -> handler m s) initialState
