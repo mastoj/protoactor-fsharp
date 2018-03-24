@@ -4,15 +4,19 @@ open Proto
 open System.Threading.Tasks
 open System
 
-namespace Avalanchain.Core
-
 open Proto.FSharp
 
-[<RequireQualifiedAccess>]
 module Persistence = 
     open Proto
     open Proto.Persistence
     open Proto.Persistence.SnapshotStrategies
+
+    type SenderInfo<'Event> = { // Mostly for streaming support
+        Address: string
+        Tell: 'Event -> unit
+    } with static member FromPID (pid: PID) = { Address = pid.Address; Tell = fun e -> pid <! e }
+
+    type CommandProcessor<'Command,'Event,'State,'CommandError> = SenderInfo<'Event> -> 'State -> int64 -> 'Command -> Async<Result<('Event option) * bool, 'CommandError>>
 
     let private applyEvent recoverEvent replayEvent persistedEvent state (evt: Event) =
         match evt with
@@ -51,19 +55,24 @@ module Persistence =
         | Started _ -> async { do! persistence.RecoverStateAsync() |> Async.AwaitTask }
         | _ -> async {()}
 
-    let private handler (persistence: Persistence) processCommand state (ctx: IContext) (cmd: 'Command): Async<unit> = 
-        let res = processCommand state persistence.Index cmd
+    let private handler (persistence: Persistence) (processCommand: CommandProcessor<'Command,'Event,'State,'CommandError>) (state: 'State) (ctx: IContext) (cmd: 'Command): Async<unit> = async { 
+        let! res = processCommand (SenderInfo<'Event>.FromPID ctx.Sender) state persistence.Index cmd
         match res with
-        | Ok evt -> async { do! persistence.PersistEventAsync evt |> Async.AwaitTask 
-                            if isNull(ctx.Sender) |> not then ctx.Sender <! Ok() }
-        | Error e -> async { e >! ctx.Sender }
+        | Ok (evtOpt, save) -> match evtOpt with 
+                                | Some evt ->   if save then do! persistence.PersistEventAsync evt |> Async.AwaitTask 
+                                                if isNull(ctx.Sender) |> not then ctx.Sender <! Ok evt
+                                | None -> () 
+        | Error e -> e >! ctx.Sender 
+    }
+
+    let simpleProcessCommand = fun _ _ _ cmd -> async { return (Some cmd, true) |> Ok }
 
     [<RequireQualifiedAccess>]
     module CommandSourcingAndSnapshotting = 
         let persistDetailed 
             (eventStore: IEventStore) 
             (snapshotStore: ISnapshotStore) 
-            (processCommand: 'State -> int64 -> 'Command -> Result<'Event, 'CommandError>)
+            (processCommand: CommandProcessor<'Command,'Event,'State,'CommandError>)
             (recoverEvent: 'State -> int64 -> 'Event -> 'State) 
             (replayEvent: 'State -> int64 -> 'Event -> 'State)
             (persistedEvent: 'State -> int64 -> 'Event -> 'State)
@@ -89,7 +98,7 @@ module Persistence =
 
         let persist
             (provider: IProvider) 
-            (processCommand: 'State -> int64 -> 'Command -> Result<'Event, 'CommandError>)
+            (processCommand: CommandProcessor<'Command,'Event,'State,'CommandError>)
             (onEvent: 'State -> int64 -> 'Event -> 'State) 
             (log: string -> unit) 
             (snapshotStrategy: ISnapshotStrategy)
@@ -111,7 +120,7 @@ module Persistence =
             
         let persistLight
             (provider: IProvider) 
-            (processCommand: 'State -> int64 -> 'Command -> Result<'Event, 'CommandError>)
+            (processCommand: CommandProcessor<'Command,'Event,'State,'CommandError>)
             (onEvent: 'State -> int64 -> 'Event -> 'State) 
             (persistentID: string)
             (initialState: 'State)
@@ -126,7 +135,7 @@ module Persistence =
                 initialState             
 
     [<RequireQualifiedAccess>]
-    module EventSourcingAndSnapshotting = 
+    module EventSourcingAndSnapshotting =         
         let persistDetailed
             (eventStore: IEventStore) 
             (snapshotStore: ISnapshotStore) 
@@ -142,7 +151,7 @@ module Persistence =
             CommandSourcingAndSnapshotting.persistDetailed 
                 eventStore 
                 snapshotStore
-                (fun _ _ cmd -> Ok cmd)
+                simpleProcessCommand
                 recoverEvent
                 replayEvent
                 persistedEvent
@@ -162,7 +171,7 @@ module Persistence =
             = 
             CommandSourcingAndSnapshotting.persist 
                 provider 
-                (fun _ _ cmd -> Ok cmd)
+                simpleProcessCommand
                 onEvent
                 log
                 snapshotStrategy
@@ -177,7 +186,7 @@ module Persistence =
             = 
             CommandSourcingAndSnapshotting.persistLight 
                 provider 
-                (fun _ _ cmd -> Ok cmd)
+                simpleProcessCommand
                 onEvent
                 persistentID
                 initialState
@@ -196,13 +205,13 @@ module Persistence =
                     persistentID,
                     System.Action<_>(applySnapshot recoverSnapshot persistedSnapshot ignore))
 
-            Actor.create3Async (systemHandler persistence) (handler persistence (fun _ _ e -> Ok e) None)
+            Actor.create3Async (systemHandler persistence) (handler persistence simpleProcessCommand None)
 
     [<RequireQualifiedAccess>]
     module CommandSourcing = 
         let persist 
             (eventStore: IEventStore) 
-            (processCommand: 'State -> int64 -> 'Command -> Result<'Event, 'CommandError>)
+            (processCommand: CommandProcessor<'Command,'Event,'State,'CommandError>)
             (persistedEvent: 'State -> int64 -> 'Event -> 'State)
             (persistentID: string) 
             (initialState: 'State)
@@ -227,7 +236,7 @@ module Persistence =
             = 
             CommandSourcing.persist 
                 eventStore 
-                (fun _ _ cmd -> Ok cmd)
+                simpleProcessCommand
                 persistedEvent
                 persistentID
                 initialState
@@ -242,7 +251,7 @@ module Persistence =
                 persistentID
                 None                
 
-    let getEvents<'T> (handler: 'T -> unit) (persistentID: string) (indexStart: int64) (indexEnd: int64) (eventStore: IEventStore) =
+    let getEvents<'T> (eventStore: IEventStore) (persistentID: string) (indexStart: int64) (indexEnd: int64) (handler: 'T -> unit) =
         eventStore.GetEventsAsync (persistentID, indexStart, indexEnd,
             System.Action<_>(fun o ->   if not (isNull o) then 
                                             match o with
